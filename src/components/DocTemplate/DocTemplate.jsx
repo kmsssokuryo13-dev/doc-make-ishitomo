@@ -63,6 +63,13 @@ export const DocTemplate = ({
     pick = { ...p, showAnnex: false };
   }
 
+  // 印字位置オフセット
+  const printOffsetX = pick?.printOffsetX ?? 0;
+  const printOffsetY = pick?.printOffsetY ?? 0;
+  const printOffsetStyle = (printOffsetX || printOffsetY)
+    ? { transform: `translate(${printOffsetX}px, ${printOffsetY}px)` }
+    : {};
+
   const getSignerPos = (idx) => {
     const list = Array.isArray(pick?.signerStampPositions) ? pick.signerStampPositions : [];
     const hit = list.find(p => p?.i === idx);
@@ -267,6 +274,12 @@ export const DocTemplate = ({
     return parts.join("　");
   };
 
+  // 石友版: 持分のみ表示（住所・氏名は非表示）
+  const formatApplicantShareOnly = (p) => {
+    if (hasMultipleApplicants) return formatShare(p?.share);
+    return "";
+  };
+
   const renderOwnerWithDecedent = (p, formatFn) => {
     const line = typeof formatFn === "function" ? formatFn(p) : formatFn;
     const pDecedent = (p?.decedentName || "").trim();
@@ -285,22 +298,13 @@ export const DocTemplate = ({
     const currentYearReiwa = String(new Date().getFullYear() - 2018);
 
     return (
-      <div className="doc-content flex flex-col h-full text-black font-serif relative doc-no-bold" style={{ fontFamily: '"MS Mincho","ＭＳ 明朝",serif' }}>
+      <div className="doc-content flex flex-col h-full text-black font-serif relative doc-no-bold" style={{ fontFamily: '"MS Mincho","ＭＳ 明朝",serif', ...printOffsetStyle }}>
         <div className="stamp-area">
           {(() => {
             const pos = (pick.stampPositions || []).find(p => p.i === 0) || { dx: 0, dy: 0 };
             return <DraggableStamp key={`topstamp-0`} index={0} dx={pos.dx} dy={pos.dy} editable={!isPrint} onChange={onStampPosChange} />;
           })()}
         </div>
-
-        <h1
-          style={{
-            fontSize: '20pt', fontWeight: 'bold', textAlign: 'center',
-            margin: '0', position: 'absolute', left: '0', right: '0', top: '40mm'
-          }}
-        >
-          工事完了引渡証明書
-        </h1>
 
         <div style={{ position: 'absolute', inset: 0, padding: DOC_PAGE_PADDING, boxSizing: 'border-box', pointerEvents: 'none' }}>
           <div style={{ position: 'relative' }}>
@@ -309,20 +313,17 @@ export const DocTemplate = ({
               customHtml={pick.customText}
               onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
             >
-              <h2 style={{ fontSize: '12pt', margin: '0', fontWeight: 'normal', marginTop: '36mm' }}>建物の表示</h2>
-              <div style={{ fontSize: '11pt', marginBottom: '8mm' }}>
+              <div style={{ fontSize: '11pt', marginTop: '36mm', marginBottom: '8mm' }}>
                 {(pick.showMain ?? true) && renderMainValuesInline(targetProp, { showHouseNum: false })}
                 {(pick.showAnnex ?? true) && (targetProp.annexes || []).map(a => (
                   <div key={a.id}>{renderAnnexValuesPlain(a)}</div>
                 ))}
               </div>
 
-              <h2 style={{ fontSize: '12pt', margin: '0', fontWeight: 'normal' }}>工事種別及び完了年月日</h2>
               <div style={{ fontSize: '11pt', marginBottom: '8mm' }}>
                 <p style={{ margin: '0' }}>{formatWareki(targetProp.registrationDate, targetProp.additionalUnknownDate)}　{targetProp.registrationCause || "　"}</p>
               </div>
 
-              <h2 style={{ fontSize: '12pt', margin: '0', fontWeight: 'normal' }}>所有者の住所氏名</h2>
               <div style={{ fontSize: '11pt', marginBottom: '8mm' }}>
                 {(applicants || []).map(p => (
                   <p key={p.id} style={{ margin: '0 0 2mm 0' }}>
@@ -331,38 +332,10 @@ export const DocTemplate = ({
                 ))}
               </div>
 
-              <p style={{ fontSize: '11pt', marginBottom: '10mm' }}>
-                上記のとおり工事を完了して引渡したものであることを証明します。
-              </p>
-
               <div style={{ textAlign: 'left', fontSize: '12pt', marginBottom: '10mm' }}>
                 <p>令和{toFullWidthDigits(currentYearReiwa)}年　　月　　日</p>
               </div>
-              <h2 style={{ fontSize: '11pt', margin: '0 0 2mm 0', fontWeight: 'bold' }}>工事人</h2>
-
-              {targetContractor ? (
-              <div style={{ fontSize: '12pt', paddingRight: 'calc(1em + 26.6mm)', marginTop: '5mm' }}>
-                <p style={{ margin: '0 0 2mm 0' }}>{targetContractor.address || "　"}</p>
-                <p style={{ margin: '0 0 2mm 0' }}>{targetContractor.name || "　"}</p>
-                <p style={{ margin: '0' }}>{targetContractor.representative || "　"}</p>
-              </div>
-              ) : (
-              <div style={{ paddingRight: 'calc(1em + 26.6mm)', marginTop: '5mm' }}>
-                <p style={{ margin: '0' }}>　</p>
-              </div>
-              )}
             </EditableDocBody>
-            <div style={{ position: 'absolute', bottom: 0, right: 0, display: 'flex', flexDirection: 'column', gap: '2mm', pointerEvents: 'auto' }}>
-              <div style={{ position: 'relative', width: '26.6mm', height: '26.6mm' }}>
-                <DraggableSignerStamp
-                  index={0}
-                  dx={(pick.signerStampPositions?.[0]?.dx || 0)}
-                  dy={(pick.signerStampPositions?.[0]?.dy || 0)}
-                  editable={!isPrint}
-                  onChange={onSignerStampPosChange}
-                />
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -427,22 +400,13 @@ export const DocTemplate = ({
     };
 
     return (
-      <div className="doc-content flex flex-col h-full text-black font-serif relative doc-no-bold" style={{ fontFamily: '"MS Mincho","ＭＳ 明朝",serif' }}>
+      <div className="doc-content flex flex-col h-full text-black font-serif relative doc-no-bold" style={{ fontFamily: '"MS Mincho","ＭＳ 明朝",serif', ...printOffsetStyle }}>
         <div className="stamp-area">
           {(() => {
             const pos = (pick.stampPositions || []).find(p => p.i === 0) || { dx: 0, dy: 0 };
             return <DraggableStamp key={`topstamp-0`} index={0} dx={pos.dx} dy={pos.dy} editable={!isPrint} onChange={onStampPosChange} />;
           })()}
         </div>
-
-        <h1
-          style={{
-            fontSize: '20pt', fontWeight: 'bold', textAlign: 'center',
-            margin: '0', position: 'absolute', left: '0', right: '0', top: '40mm'
-          }}
-        >
-          工事完了引渡証明書
-        </h1>
 
         <div style={{ position: 'absolute', inset: 0, padding: DOC_PAGE_PADDING, boxSizing: 'border-box', pointerEvents: 'none' }}>
           <div style={{ position: 'relative' }}>
@@ -451,9 +415,7 @@ export const DocTemplate = ({
               customHtml={pick.customText}
               onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
             >
-              <h2 style={{ fontSize: '12pt', margin: '0', fontWeight: 'normal', marginTop: '36mm' }}>建物の表示</h2>
-              <h3 style={{ fontSize: '11pt', margin: '2mm 0 0 0', fontWeight: 'bold' }}>変更前</h3>
-              <div style={{ fontSize: '11pt', marginBottom: '4mm' }}>
+              <div style={{ fontSize: '11pt', marginTop: '36mm', marginBottom: '4mm' }}>
                 {beforeBuildings.map(b => (
                   <div key={b.id} style={{ marginBottom: '4mm' }}>
                     {(pick.showMain ?? true) && renderBldgForChange(b)}
@@ -464,7 +426,6 @@ export const DocTemplate = ({
                 ))}
                 {beforeBuildings.length === 0 && <div>　</div>}
               </div>
-              <h3 style={{ fontSize: '11pt', margin: '0', fontWeight: 'bold' }}>変更後</h3>
               <div style={{ fontSize: '11pt', marginBottom: '8mm' }}>
                 {propsToUse.map(b => (
                   <div key={b.id} style={{ marginBottom: '4mm' }}>
@@ -477,14 +438,12 @@ export const DocTemplate = ({
                 {propsToUse.length === 0 && <div>　</div>}
               </div>
 
-              <h2 style={{ fontSize: '12pt', margin: '0', fontWeight: 'normal' }}>工事種別及び完了年月日</h2>
               <div style={{ fontSize: '11pt', marginBottom: '8mm' }}>
                 {filteredCauses.length > 0 ? filteredCauses.map(c => (
                   <p key={c.id} style={{ margin: '0' }}>{c.date}{c.prefix}{c.cause}</p>
                 )) : <p style={{ margin: '0' }}>　</p>}
               </div>
 
-              <h2 style={{ fontSize: '12pt', margin: '0', fontWeight: 'normal' }}>所有者の住所氏名</h2>
               <div style={{ fontSize: '11pt', marginBottom: '8mm' }}>
                 {(applicants || []).map(p => (
                   <div key={p.id} style={{ margin: '0 0 2mm 0' }}>
@@ -493,38 +452,10 @@ export const DocTemplate = ({
                 ))}
               </div>
 
-              <p style={{ fontSize: '11pt', marginBottom: '10mm' }}>
-                上記のとおり工事を完了して引渡したものであることを証明します。
-              </p>
-
               <div style={{ textAlign: 'left', fontSize: '12pt', marginBottom: '10mm' }}>
                 <p>令和{toFullWidthDigits(currentYearReiwa)}年　　月　　日</p>
               </div>
-              <h2 style={{ fontSize: '11pt', margin: '0 0 2mm 0', fontWeight: 'bold' }}>工事人</h2>
-
-              {targetContractor ? (
-              <div style={{ fontSize: '12pt', paddingRight: 'calc(1em + 26.6mm)', marginTop: '5mm' }}>
-                <p style={{ margin: '0 0 2mm 0' }}>{targetContractor.address || "　"}</p>
-                <p style={{ margin: '0 0 2mm 0' }}>{targetContractor.name || "　"}</p>
-                <p style={{ margin: '0' }}>{targetContractor.representative || "　"}</p>
-              </div>
-              ) : (
-              <div style={{ paddingRight: 'calc(1em + 26.6mm)', marginTop: '5mm' }}>
-                <p style={{ margin: '0' }}>　</p>
-              </div>
-              )}
             </EditableDocBody>
-            <div style={{ position: 'absolute', bottom: 0, right: 0, display: 'flex', flexDirection: 'column', gap: '2mm', pointerEvents: 'auto' }}>
-              <div style={{ position: 'relative', width: '26.6mm', height: '26.6mm' }}>
-                <DraggableSignerStamp
-                  index={0}
-                  dx={(pick.signerStampPositions?.[0]?.dx || 0)}
-                  dy={(pick.signerStampPositions?.[0]?.dy || 0)}
-                  editable={!isPrint}
-                  onChange={onSignerStampPosChange}
-                />
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -553,7 +484,7 @@ export const DocTemplate = ({
     const causeDate = uniqueDates[0] || formatWareki(targetProp?.registrationDate, targetProp?.additionalUnknownDate) || "令和　年　月　日";
 
     return (
-      <div className="doc-content flex flex-col h-full text-black font-serif relative doc-no-bold" style={{ fontFamily: '"MS Mincho","ＭＳ 明朝",serif' }}>
+      <div className="doc-content flex flex-col h-full text-black font-serif relative doc-no-bold" style={{ fontFamily: '"MS Mincho","ＭＳ 明朝",serif', ...printOffsetStyle }}>
         <div className="stamp-area">
           {(() => {
             const pos = (pick.stampPositions || []).find(p => p.i === 0) || { dx: 0, dy: 0 };
@@ -561,23 +492,13 @@ export const DocTemplate = ({
           })()}
         </div>
 
-        <h1
-          style={{
-            fontSize: '20pt', fontWeight: 'bold', textAlign: 'center',
-            margin: '0', position: 'absolute', left: '0', right: '0', top: '40mm'
-          }}
-        >
-          建物取壊し証明書
-        </h1>
-
         <div style={{ position: 'absolute', inset: 0, padding: DOC_PAGE_PADDING, boxSizing: 'border-box', pointerEvents: 'none' }}>
         <EditableDocBody
           editable={!isPrint}
           customHtml={pick.customText}
           onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
         >
-          <h2 style={{ fontSize: '12pt', margin: '0', fontWeight: 'normal', marginTop: '36mm' }}>建物の表示</h2>
-          <div style={{ fontSize: '11pt', marginBottom: '8mm' }}>
+          <div style={{ fontSize: '11pt', marginTop: '36mm', marginBottom: '8mm' }}>
             {buildings.length > 0 ? buildings.map(b => (
               <div key={b.id} style={{ marginBottom: '4mm' }}>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -589,19 +510,17 @@ export const DocTemplate = ({
                 </div>
                 {(b.annexes || []).filter(a => !isAnnexEmpty(a)).map(a => (
                   <div key={a.id} style={{ display: 'flex', flexDirection: 'column' }}>
-                                        <div>{buildKindStructAreaLine(formatSymbolPrefix(a.symbol), a.kind, a.struct, a.floorAreas)}</div>
+                    <div>{buildKindStructAreaLine(formatSymbolPrefix(a.symbol), a.kind, a.struct, a.floorAreas)}</div>
                   </div>
                 ))}
               </div>
             )) : <div>　</div>}
           </div>
 
-          <h2 style={{ fontSize: '12pt', margin: '0', fontWeight: 'normal' }}>取壊しの事由及び年月日</h2>
           <div style={{ fontSize: '11pt', marginBottom: '8mm' }}>
             <p style={{ margin: '0' }}>{causeDate}取壊し</p>
           </div>
 
-          <h2 style={{ fontSize: '12pt', margin: '0', fontWeight: 'normal' }}>所有者の住所氏名</h2>
           <div style={{ fontSize: '11pt', marginBottom: '8mm' }}>
             {displayOwners.length > 0 ? displayOwners.map(p => (
               <div key={p.id} style={{ margin: '0 0 2mm 0' }}>
@@ -610,48 +529,9 @@ export const DocTemplate = ({
             )) : <div>　</div>}
           </div>
 
-          <p style={{ fontSize: '11pt', marginBottom: '10mm' }}>
-            上記のとおり建物を滅失したことを証明します。
-          </p>
-
           <div style={{ textAlign: 'left', fontSize: '12pt', marginBottom: '10mm' }}>
             <p>{formatTodayDateBlock()}</p>
           </div>
-
-          <h2 style={{ fontSize: '11pt', margin: '0 0 2mm 0', fontWeight: 'bold' }}>工事人</h2>
-
-          {targetContractor ? (
-          <div style={{ position: 'relative', width: 'fit-content', marginTop: '5mm' }}>
-            <div style={{ fontSize: '12pt', paddingRight: 'calc(1em + 26.6mm)' }}>
-              <p style={{ margin: '0 0 2mm 0' }}>{targetContractor.address || "　"}</p>
-              <p style={{ margin: '0 0 2mm 0' }}>{targetContractor.name || "　"}</p>
-              <p style={{ margin: '0' }}>{targetContractor.representative || "　"}</p>
-            </div>
-            <div contentEditable={false} style={{ position: 'absolute', top: 0, right: 0 }}>
-              <div style={{ position: 'relative', width: '26.6mm', height: '26.6mm' }}>
-                <DraggableSignerStamp
-                  index={0}
-                  dx={(pick.signerStampPositions?.[0]?.dx || 0)}
-                  dy={(pick.signerStampPositions?.[0]?.dy || 0)}
-                  editable={!isPrint}
-                  onChange={onSignerStampPosChange}
-                />
-              </div>
-            </div>
-          </div>
-          ) : (
-          <div contentEditable={false} style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '5mm' }}>
-            <div style={{ position: 'relative', width: '26.6mm', height: '26.6mm' }}>
-              <DraggableSignerStamp
-                index={0}
-                dx={(pick.signerStampPositions?.[0]?.dx || 0)}
-                dy={(pick.signerStampPositions?.[0]?.dy || 0)}
-                editable={!isPrint}
-                onChange={onSignerStampPosChange}
-              />
-            </div>
-          </div>
-          )}
         </EditableDocBody>
         </div>
       </div>
@@ -723,7 +603,7 @@ export const DocTemplate = ({
     const fallbackDate = formatWareki(targetProp?.registrationDate, targetProp?.additionalUnknownDate) || "令和　年　月　日";
 
     return (
-      <div className="doc-content flex flex-col h-full text-black font-serif relative doc-no-bold" style={{ fontFamily: '"MS Mincho","ＭＳ 明朝",serif' }}>
+      <div className="doc-content flex flex-col h-full text-black font-serif relative doc-no-bold" style={{ fontFamily: '"MS Mincho","ＭＳ 明朝",serif', ...printOffsetStyle }}>
         <div className="stamp-area">
           {(() => {
             const pos = (pick.stampPositions || []).find(p => p.i === 0) || { dx: 0, dy: 0 };
@@ -731,23 +611,13 @@ export const DocTemplate = ({
           })()}
         </div>
 
-        <h1
-          style={{
-            fontSize: '20pt', fontWeight: 'bold', textAlign: 'center',
-            margin: '0', position: 'absolute', left: '0', right: '0', top: '40mm'
-          }}
-        >
-          建物取壊し証明書
-        </h1>
-
         <div style={{ position: 'absolute', inset: 0, padding: DOC_PAGE_PADDING, boxSizing: 'border-box', pointerEvents: 'none' }}>
         <EditableDocBody
           editable={!isPrint}
           customHtml={pick.customText}
           onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
         >
-          <h2 style={{ fontSize: '12pt', margin: '0', fontWeight: 'normal', marginTop: '36mm' }}>建物の表示</h2>
-          <div style={{ fontSize: '11pt', marginBottom: '8mm' }}>
+          <div style={{ fontSize: '11pt', marginTop: '36mm', marginBottom: '8mm' }}>
             {buildings.length > 0 ? buildings.map(b => (
               <div key={b.id} style={{ marginBottom: '4mm' }}>
                 {showMain && (
@@ -768,14 +638,12 @@ export const DocTemplate = ({
             )) : <div>　</div>}
           </div>
 
-          <h2 style={{ fontSize: '12pt', margin: '0', fontWeight: 'normal' }}>取壊しの事由及び年月日</h2>
           <div style={{ fontSize: '11pt', marginBottom: '8mm' }}>
             {lossCauseEntries.length > 0 ? lossCauseEntries.map((c, i) => (
               <p key={i} style={{ margin: '0' }}>{c.date}{c.prefix}{c.cause}</p>
             )) : <p style={{ margin: '0' }}>{fallbackDate}取壊し</p>}
           </div>
 
-          <h2 style={{ fontSize: '12pt', margin: '0', fontWeight: 'normal' }}>所有者の住所氏名</h2>
           <div style={{ fontSize: '11pt', marginBottom: '8mm' }}>
             {displayOwners.length > 0 ? displayOwners.map(p => (
               <div key={p.id} style={{ margin: '0 0 2mm 0' }}>
@@ -784,48 +652,9 @@ export const DocTemplate = ({
             )) : <div>　</div>}
           </div>
 
-          <p style={{ fontSize: '11pt', marginBottom: '10mm' }}>
-            上記のとおり建物を滅失したことを証明します。
-          </p>
-
           <div style={{ textAlign: 'left', fontSize: '12pt', marginBottom: '10mm' }}>
             <p>{formatTodayDateBlock()}</p>
           </div>
-
-          <h2 style={{ fontSize: '11pt', margin: '0 0 2mm 0', fontWeight: 'bold' }}>工事人</h2>
-
-          {targetContractor ? (
-          <div style={{ position: 'relative', width: 'fit-content', marginTop: '5mm' }}>
-            <div style={{ fontSize: '12pt', paddingRight: 'calc(1em + 26.6mm)' }}>
-              <p style={{ margin: '0 0 2mm 0' }}>{targetContractor.address || "　"}</p>
-              <p style={{ margin: '0 0 2mm 0' }}>{targetContractor.name || "　"}</p>
-              <p style={{ margin: '0' }}>{targetContractor.representative || "　"}</p>
-            </div>
-            <div contentEditable={false} style={{ position: 'absolute', top: 0, right: 0 }}>
-              <div style={{ position: 'relative', width: '26.6mm', height: '26.6mm' }}>
-                <DraggableSignerStamp
-                  index={0}
-                  dx={(pick.signerStampPositions?.[0]?.dx || 0)}
-                  dy={(pick.signerStampPositions?.[0]?.dy || 0)}
-                  editable={!isPrint}
-                  onChange={onSignerStampPosChange}
-                />
-              </div>
-            </div>
-          </div>
-          ) : (
-          <div contentEditable={false} style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '5mm' }}>
-            <div style={{ position: 'relative', width: '26.6mm', height: '26.6mm' }}>
-              <DraggableSignerStamp
-                index={0}
-                dx={(pick.signerStampPositions?.[0]?.dx || 0)}
-                dy={(pick.signerStampPositions?.[0]?.dy || 0)}
-                editable={!isPrint}
-                onChange={onSignerStampPosChange}
-              />
-            </div>
-          </div>
-          )}
         </EditableDocBody>
         </div>
       </div>
@@ -865,22 +694,13 @@ export const DocTemplate = ({
     const currentYear = toFullWidthDigits(w.year);
 
     return (
-      <div className="doc-content flex flex-col h-full text-black font-serif relative doc-no-bold" style={{ fontFamily: '"MS Mincho","ＭＳ 明朝",serif' }}>
+      <div className="doc-content flex flex-col h-full text-black font-serif relative doc-no-bold" style={{ fontFamily: '"MS Mincho","ＭＳ 明朝",serif', ...printOffsetStyle }}>
         <div style={{ position: 'absolute', inset: 0, padding: DOC_PAGE_PADDING, boxSizing: 'border-box', pointerEvents: 'none' }}>
         <EditableDocBody
           editable={!isPrint}
           customHtml={pick.customText}
           onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
         >
-          <h1
-            style={{
-              fontSize: '20pt', fontWeight: 'bold', textAlign: 'center',
-              margin: '0 0 8mm 0', letterSpacing: '0.5em'
-            }}
-          >
-            証　明　願
-          </h1>
-
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', fontSize: '12pt', marginBottom: '2mm' }}>
             <div>{getMayorTitle()}　殿</div>
             <div>{formatTodayDateBlock()}</div>
@@ -892,12 +712,10 @@ export const DocTemplate = ({
 
           <div style={{ fontSize: '11pt', marginBottom: '6mm' }}>
             <div style={{ display: 'flex', gap: '4mm' }}>
-              <span>使用目的</span>
               <span>管轄法務局へ建物滅失登記申請のため</span>
             </div>
           </div>
 
-          <h2 style={{ fontSize: '12pt', margin: '0', fontWeight: 'normal' }}>建物の表示</h2>
           <div style={{ fontSize: '11pt', marginBottom: '8mm', minHeight: '30mm', paddingLeft: '4mm' }}>
             {ntrBuildings.length > 0 ? ntrBuildings.map(b => (
               <div key={b.id} style={{ marginBottom: '4mm' }}>
@@ -917,18 +735,12 @@ export const DocTemplate = ({
             )) : <div>　</div>}
           </div>
 
-          <h2 style={{ fontSize: '12pt', margin: '0', fontWeight: 'normal' }}>所有者</h2>
           <div style={{ fontSize: '11pt', marginBottom: '8mm', paddingLeft: '4mm' }}>
             {ntrDisplayOwners.length > 0 ? ntrDisplayOwners.map(p => (
               <div key={p.id} style={{ margin: '0 0 2mm 0' }}>
                 {renderOwnerWithDecedent(p, (pp) => `${pp.address || "　"}　${pp.name || "　"}`)}
               </div>
             )) : <div>　</div>}
-          </div>
-
-          <div style={{ textAlign: 'right', fontSize: '12pt', marginTop: 'auto' }}>
-            <p style={{ margin: '0 0 2mm 0' }}>{linkedScrivener?.address || "　"}</p>
-            <p style={{ margin: '0' }}>土地家屋調査士　{linkedScrivener?.name || "　"}</p>
           </div>
         </EditableDocBody>
         </div>
@@ -955,7 +767,7 @@ export const DocTemplate = ({
     return (
       <div
         className="doc-content flex flex-col h-full text-black font-serif relative doc-no-bold"
-        style={{ fontFamily: '"MS Mincho","ＭＳ 明朝",serif' }}
+        style={{ fontFamily: '"MS Mincho","ＭＳ 明朝",serif', ...printOffsetStyle }}
       >
         <div className="stamp-area">
           {signers.map((_, i) => {
@@ -964,16 +776,6 @@ export const DocTemplate = ({
           })}
         </div>
 
-        <h1
-          style={{
-            fontSize: '24pt', fontWeight: 'bold', textAlign: 'center',
-            letterSpacing: '10mm', margin: '0', position: 'absolute',
-            left: '0', right: '0', top: '40mm'
-          }}
-        >
-          委任状
-        </h1>
-
         <div style={{ position: 'absolute', inset: 0, padding: DOC_PAGE_PADDING, boxSizing: 'border-box', pointerEvents: 'none' }}>
           <div style={{ position: 'relative' }}>
             <EditableDocBody
@@ -981,37 +783,12 @@ export const DocTemplate = ({
               customHtml={pick.customText}
               onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
             >
-              <div style={{ textAlign: 'right', fontSize: '11pt', marginTop: '36mm', marginBottom: '5mm' }}>
-                {topRightBlock ?? (
-                  useLinkedScrivenerOnTopRight ? (
-                    <>
-                      <p style={{ margin: '0' }}>{linkedScrivenerAddrLine}</p>
-                      <p style={{ margin: '0' }}>{linkedScrivenerNameLine}</p>
-                    </>
-                  ) : (
-                    <>
-                                                                                        <p style={{ margin: '0' }}>射水市善光寺２７番１号　塩谷信泰</p>
-                                                                                        <p style={{ margin: '0' }}>射水市善光寺２７番１号　塩谷一真</p>
-                    </>
-                  )
-                )}
-              </div>
-
-              <p style={{ fontSize: '11pt', marginBottom: '10mm', textIndent: '1em' }}>
-                {name === "委任状（保存）"
-                  ? DEFAULT_DELEGATION_TEXT_SAVE
-                  : name === "委任状（住所変更）"
-                    ? DEFAULT_DELEGATION_TEXT_ADDRESS_CHANGE
-                    : DEFAULT_DELEGATION_TEXT}
-              </p>
-
-              <div style={{ fontSize: '11pt', marginBottom: '10mm', fontWeight: 'bold' }}>
+              <div style={{ fontSize: '11pt', marginTop: '36mm', marginBottom: '10mm', fontWeight: 'bold' }}>
                 {workText}
               </div>
 
               <div style={{ marginTop: '-5mm' }}>
-                <h2 style={{ fontSize: '11pt', margin: '0', fontWeight: 'bold' }}>{buildingTitle}</h2>
-                {buildingSubTitle && <h3 style={{ fontSize: '11pt', margin: '2mm 0 0 0', fontWeight: 'bold' }}>{buildingSubTitle}</h3>}
+                {buildingSubTitle && <div style={{ fontSize: '11pt', margin: '2mm 0 0 0', fontWeight: 'bold' }}>{buildingSubTitle}</div>}
                 <div style={{ fontSize: '11pt', marginBottom: '10mm' }}>
                   {buildingBlock}
                 </div>
@@ -1021,11 +798,10 @@ export const DocTemplate = ({
                 {dateBlock ?? formatTodayDateBlock()}
               </div>
 
-              <h2 style={{ fontSize: '11pt', margin: '2mm 0 1mm 0', fontWeight: 'bold' }}>委任者</h2>
               <div style={{ fontSize: '11pt' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2mm', paddingRight: 'calc(1em + 26.6mm)' }}>
                   {signers.map((p, i) => (
-                    <div key={p.id || i} style={{ display: 'flex', alignItems: 'center', minHeight: '26.6mm' }}>{renderOwnerWithDecedent(p, formatApplicantLine)}</div>
+                    <div key={p.id || i} style={{ display: 'flex', alignItems: 'center', minHeight: '26.6mm' }}>{formatApplicantShareOnly(p)}</div>
                   ))}
                 </div>
               </div>
@@ -1705,12 +1481,12 @@ export const DocTemplate = ({
 
   const renderStatementCommon = ({ titleText, defaultBody }) => {
     const hasMultipleStatementPeople = (statementPeople || []).length >= 2;
-    const formatStatementLine = (p) => {
-      const parts = [];
-      parts.push(p?.address || "　");
-      if (hasMultipleStatementPeople) parts.push(formatShare(p?.share));
-      parts.push(p?.name || "　");
-      return parts.join("　");
+    // 石友版: 持分のみ表示（住所・氏名は非表示）、showStatementShareトグルで制御
+    const showShare = pick?.showStatementShare ?? true;
+    const formatStatementShareOnly = (p) => {
+      if (!showShare) return "";
+      if (hasMultipleStatementPeople) return formatShare(p?.share);
+      return "";
     };
 
     const buildingBlock = targetProp ? (
@@ -1726,7 +1502,7 @@ export const DocTemplate = ({
     return (
       <div
         className="doc-content flex flex-col h-full text-black font-serif relative doc-no-bold"
-        style={{ fontFamily: '"MS Mincho","ＭＳ 明朝",serif' }}
+        style={{ fontFamily: '"MS Mincho","ＭＳ 明朝",serif', ...printOffsetStyle }}
       >
         <div className="stamp-area">
           {(statementPeople || []).map((_, i) => {
@@ -1735,16 +1511,6 @@ export const DocTemplate = ({
           })}
         </div>
 
-        <h1
-          style={{
-            fontSize: '24pt', fontWeight: 'bold', textAlign: 'center',
-            letterSpacing: '10mm', margin: '0', position: 'absolute',
-                    left: '0', right: '0', top: '40mm'
-                  }}
-                >
-                  {titleText}
-        </h1>
-
         <div style={{ position: 'absolute', inset: 0, padding: DOC_PAGE_PADDING, boxSizing: 'border-box', pointerEvents: 'none' }}>
           <div style={{ position: 'relative' }}>
             <EditableDocBody
@@ -1752,12 +1518,10 @@ export const DocTemplate = ({
               customHtml={pick.customText}
               onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
             >
-              <h2 style={{ fontSize: "11pt", margin: "0", fontWeight: "bold", marginTop: '36mm' }}>建物の表示</h2>
-              <div style={{ fontSize: "11pt", marginBottom: "8mm" }}>{buildingBlock}</div>
+              <div style={{ fontSize: "11pt", marginTop: '36mm', marginBottom: "8mm" }}>{buildingBlock}</div>
 
               <div style={{ fontSize: "11pt", marginBottom: "8mm" }}>
-                <div>確認済証の番号{"\u3000\u3000\u3000\u3000\u3000\u3000\u3000"}{targetProp?.confirmationCert ? formatConfirmationCertLine(targetProp.confirmationCert) : "\u3000"}</div>
-                <div>確認済証記載の建築主名義</div>
+                <div>{targetProp?.confirmationCert ? formatConfirmationCertLine(targetProp.confirmationCert) : "　"}</div>
                 {(() => {
                   const confirmIds = Array.isArray(pick?.confirmApplicantPersonIds) ? pick.confirmApplicantPersonIds : [];
                   const people = siteData.people || [];
@@ -1765,24 +1529,19 @@ export const DocTemplate = ({
                     ? people.filter(p => confirmIds.includes(p.id))
                     : people.filter(p => (p.roles || []).includes("建築申請人"));
                   return selected.length > 0
-                    ? selected.map(p => <div key={p.id} style={{ paddingLeft: "15.2em" }}>{p.name || "\u3000"}</div>)
-                    : <div style={{ paddingLeft: "15.2em" }}>{"\u3000"}</div>;
+                    ? selected.map(p => <div key={p.id}>{p.name || "　"}</div>)
+                    : <div>{"　"}</div>;
                 })()}
-              </div>
-
-              <div style={{ fontSize: "11pt", marginBottom: "8mm", whiteSpace: "pre-wrap" }}>
-                {defaultBody}
               </div>
 
               <div style={{ textAlign: "left", fontSize: "11pt", margin: "0 0 6mm 0" }}>
                 {formatTodayDateBlock()}
               </div>
 
-              <h2 style={{ fontSize: "11pt", margin: "2mm 0 1mm 0", fontWeight: "bold" }}>申述人</h2>
               <div style={{ fontSize: "11pt" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "2mm", paddingRight: "calc(1em + 26.6mm)" }}>
                   {(statementPeople || []).map((p, i) => (
-                    <div key={p.id || i} style={{ display: "flex", alignItems: "center", minHeight: "26.6mm" }}>{formatStatementLine(p)}</div>
+                    <div key={p.id || i} style={{ display: "flex", alignItems: "center", minHeight: "26.6mm" }}>{formatStatementShareOnly(p)}</div>
                   ))}
                 </div>
               </div>
@@ -1838,22 +1597,13 @@ export const DocTemplate = ({
     const buyerText = displayBuyers.map(p => `${p.address || "　"}　${p.name || "　"}様`).join("、");
 
     return (
-      <div className="doc-content flex flex-col h-full text-black font-serif relative doc-no-bold" style={{ fontFamily: '"MS Mincho","ＭＳ 明朝",serif' }}>
+      <div className="doc-content flex flex-col h-full text-black font-serif relative doc-no-bold" style={{ fontFamily: '"MS Mincho","ＭＳ 明朝",serif', ...printOffsetStyle }}>
         <div className="stamp-area">
           {(() => {
             const pos = (pick.stampPositions || []).find(p => p.i === 0) || { dx: 0, dy: 0 };
             return <DraggableStamp key={`topstamp-0`} index={0} dx={pos.dx} dy={pos.dy} editable={!isPrint} onChange={onStampPosChange} />;
           })()}
         </div>
-
-        <h1
-          style={{
-            fontSize: '20pt', fontWeight: 'bold', textAlign: 'center',
-            letterSpacing: '0.5em', margin: '0', position: 'absolute', left: '0', right: '0', top: '40mm'
-          }}
-        >
-          売渡証明書
-        </h1>
 
         <div style={{ position: 'absolute', inset: 0, padding: DOC_PAGE_PADDING, boxSizing: 'border-box', pointerEvents: 'none' }}>
           <div style={{ position: 'relative' }}>
@@ -1862,8 +1612,7 @@ export const DocTemplate = ({
               customHtml={pick.customText}
               onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
             >
-              <h2 style={{ fontSize: '12pt', margin: '0', fontWeight: 'normal', marginTop: '36mm' }}>建物の表示</h2>
-              <div style={{ fontSize: '11pt', marginBottom: '4mm' }}>
+              <div style={{ fontSize: '11pt', marginTop: '36mm', marginBottom: '4mm' }}>
                 {saleBuilding ? (
                   <>
                     {(pick.showMain ?? true) && renderMainValuesInline(saleBuilding, { showHouseNum: false })}
@@ -1873,11 +1622,6 @@ export const DocTemplate = ({
                   </>
                 ) : <div>　</div>}
               </div>
-              <div style={{ textAlign: 'right', fontSize: '11pt', marginBottom: '12mm' }}>以下余白</div>
-
-              <p style={{ fontSize: '11pt', marginBottom: '12mm' }}>
-                上記建物につき、{toFullWidthDigits(`${w.era}`)}　　年　　月　　日に{buyerText}へ売渡したことを証明します。
-              </p>
 
               <div style={{ textAlign: 'left', fontSize: '12pt', marginBottom: '6mm' }}>
                 <p>{toFullWidthDigits(`${w.era}${currentYearReiwa}年　　月　　日`)}</p>

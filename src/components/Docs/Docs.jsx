@@ -45,7 +45,9 @@ export const Docs = ({ sites, setSites, contractors, scriveners }) => {
     combineBeforeBuildingIds: [],
     combinePurpose: "combineOnly",
     saleBuildingSource: "proposed",
-    saleSellerPersonIds: []
+    saleSellerPersonIds: [],
+    printOffsetX: 0,
+    printOffsetY: 0
   };
 
   const allInstances = useMemo(() => {
@@ -801,6 +803,18 @@ ${styles}
                     <div className="border-t pt-4 text-black">
                       <div className="space-y-3">
 
+                        <div>
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="w-4 h-4 rounded"
+                              checked={activePick.showStatementShare ?? true}
+                              onChange={e => handlePickChange(activeInstanceKey, { showStatementShare: e.target.checked })}
+                            />
+                            <span className="text-xs font-bold text-gray-700">持分を表示する</span>
+                          </label>
+                        </div>
+
                         {(() => {
                           const confirmCandidates = (siteData?.people || []).filter(p => {
                             const roles = p?.roles || [];
@@ -1462,6 +1476,52 @@ ${styles}
                     </div>
                     );
                   })()}
+
+                  <div className="border-t pt-4 text-black">
+                    <label className="block text-[10px] font-bold text-gray-500 mb-2">印字位置調整（px）</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[9px] text-gray-400 mb-0.5">左右（＋で右）</label>
+                        <input
+                          type="number"
+                          className="w-full text-xs p-1.5 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 outline-none text-black bg-white"
+                          value={activePick.printOffsetX ?? 0}
+                          onChange={e => handlePickChange(activeInstanceKey, { printOffsetX: Number(e.target.value) || 0 })}
+                          step={1}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[9px] text-gray-400 mb-0.5">上下（＋で下）</label>
+                        <input
+                          type="number"
+                          className="w-full text-xs p-1.5 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 outline-none text-black bg-white"
+                          value={activePick.printOffsetY ?? 0}
+                          onChange={e => handlePickChange(activeInstanceKey, { printOffsetY: Number(e.target.value) || 0 })}
+                          step={1}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-1 mt-2">
+                      {[-5, -1, 1, 5].map(d => (
+                        <button key={`x${d}`} onClick={() => handlePickChange(activeInstanceKey, { printOffsetX: (activePick.printOffsetX ?? 0) + d })}
+                          className="flex-1 text-[8px] py-1 bg-slate-100 hover:bg-slate-200 rounded font-bold">
+                          {d > 0 ? `右+${d}` : `左${d}`}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex gap-1 mt-1">
+                      {[-5, -1, 1, 5].map(d => (
+                        <button key={`y${d}`} onClick={() => handlePickChange(activeInstanceKey, { printOffsetY: (activePick.printOffsetY ?? 0) + d })}
+                          className="flex-1 text-[8px] py-1 bg-slate-100 hover:bg-slate-200 rounded font-bold">
+                          {d > 0 ? `下+${d}` : `上${d}`}
+                        </button>
+                      ))}
+                    </div>
+                    <button onClick={() => handlePickChange(activeInstanceKey, { printOffsetX: 0, printOffsetY: 0 })}
+                      className="w-full mt-1 text-[8px] py-1 bg-slate-100 hover:bg-slate-200 rounded font-bold text-red-500">
+                      位置リセット
+                    </button>
+                  </div>
 
                   <div className="border-t pt-2 space-y-2 font-sans font-bold"><button onClick={() => handlePickChange(activeInstanceKey, { customText: null })} className="w-full flex items-center justify-center gap-1.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-[9px] font-bold rounded"><ResetIcon size={12} /> 文言をリセット</button><button onClick={() => handlePickChange(activeInstanceKey, { stampPositions: null, signerStampPositions: null })} className="w-full flex items-center justify-center gap-1.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-[9px] font-bold rounded"><ResetIcon size={12} /> 位置をリセット</button></div>
                 </div>

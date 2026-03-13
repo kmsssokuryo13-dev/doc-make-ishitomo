@@ -150,7 +150,7 @@ export const Editor = ({ sites, setSites, activeSiteId, setActiveSiteId, contrac
       <aside className="w-64 bg-slate-800 text-white flex flex-col shrink-0 shadow-xl font-sans">
         <div className="p-4 bg-slate-900 border-b border-slate-700">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2 text-blue-400 font-bold"><Building size={18} /><h1 className="text-sm truncate text-white">書類作成アプリ</h1></div>
+            <div className="flex items-center gap-2 text-blue-400 font-bold"><Building size={18} /><h1 className="text-sm truncate text-white">建物書類作成（石友）</h1></div>
           </div>
           <div className="grid grid-cols-2 gap-2 mb-4">
             <button onClick={exportToJson} className="flex items-center justify-center gap-1 py-1.5 bg-slate-700 hover:bg-slate-600 rounded text-[10px] font-bold border border-slate-600 transition-colors text-white"><Download size={12} /> JSON保存</button>
