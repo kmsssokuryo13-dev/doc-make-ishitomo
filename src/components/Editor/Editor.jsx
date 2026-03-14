@@ -16,7 +16,7 @@ import { MasterManagerModal } from './MasterManagerModal.jsx';
 import { PdfAutoFillPanel } from './PdfAutoFillModal.jsx';
 import { PdfViewer } from '../PdfViewer.jsx';
 
-export const Editor = ({ sites, setSites, activeSiteId, setActiveSiteId, contractors, setContractors, scriveners, setScriveners }) => {
+export const Editor = ({ sites, setSites, activeSiteId, setActiveSiteId, contractors, setContractors }) => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('land_reg');
   const [pdfFiles, setPdfFiles] = useState([]);
@@ -123,7 +123,7 @@ export const Editor = ({ sites, setSites, activeSiteId, setActiveSiteId, contrac
   }, [activeSiteId, setSites]);
 
   const exportToJson = () => {
-    const data = { schemaVersion: 6, exportedAt: new Date().toISOString(), app: "document-builder-building", activeSiteId, sites, contractors, scriveners };
+    const data = { schemaVersion: 6, exportedAt: new Date().toISOString(), app: "document-builder-building", activeSiteId, sites, contractors };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = `survey_docs_${new Date().toISOString().slice(0, 10)}.json`; a.click(); URL.revokeObjectURL(url);
@@ -139,7 +139,6 @@ export const Editor = ({ sites, setSites, activeSiteId, setActiveSiteId, contrac
         const sanitized = data.sites.map(sanitizeSiteData);
         setSites(sanitized); setActiveSiteId(sanitized.find(x => x.id === data.activeSiteId) ? data.activeSiteId : sanitized[0].id);
         if (Array.isArray(data.contractors)) setContractors(data.contractors);
-        if (Array.isArray(data.scriveners)) setScriveners(data.scriveners);
       } catch (err) { alert("読込失敗: " + err.message); }
     };
     reader.readAsText(file);
@@ -156,7 +155,7 @@ export const Editor = ({ sites, setSites, activeSiteId, setActiveSiteId, contrac
             <button onClick={exportToJson} className="flex items-center justify-center gap-1 py-1.5 bg-slate-700 hover:bg-slate-600 rounded text-[10px] font-bold border border-slate-600 transition-colors text-white"><Download size={12} /> JSON保存</button>
             <label className="flex items-center justify-center gap-1 py-1.5 bg-slate-700 hover:bg-slate-600 rounded text-[10px] font-bold border border-slate-600 cursor-pointer transition-colors text-white"><Upload size={12} /> JSON読込<input type="file" accept=".json" className="hidden" onChange={importFromJson} /></label>
           </div>
-          <button onClick={() => setIsMasterModalOpen(true)} className="w-full mb-2 flex items-center justify-center gap-2 py-2 bg-slate-700 hover:bg-slate-600 rounded text-[10px] font-bold border border-slate-600 transition-all text-white"><Settings2 size={14} /> マスタ管理</button>
+          <button onClick={() => setIsMasterModalOpen(true)} className="w-full mb-2 flex items-center justify-center gap-2 py-2 bg-slate-700 hover:bg-slate-600 rounded text-[10px] font-bold border border-slate-600 transition-all text-white"><Settings2 size={14} /> 工事人マスタ管理</button>
           <button onClick={() => { setNewSiteName(''); setIsAddModalOpen(true); }} className="w-full flex items-center justify-center gap-2 py-2.5 bg-blue-600 hover:bg-blue-500 rounded text-xs font-bold shadow-lg active:scale-95 transition-all text-white"><Plus size={18} /> 新規現場作成</button>
         </div>
         <div className="flex-1 overflow-y-auto custom-scrollbar">
@@ -193,10 +192,6 @@ export const Editor = ({ sites, setSites, activeSiteId, setActiveSiteId, contrac
                     <TabBtn active={activeTab === 'build_prop'} label="申請建物" onClick={() => setActiveTab('build_prop')} icon={<FileText size={14}/>} />
                     <TabBtn active={activeTab === 'people'} label="関係人" onClick={() => setActiveTab('people')} icon={<Users size={14}/>} />
                     <div className="ml-auto flex items-center gap-2 shrink-0">
-                      <select className="text-[10px] py-1 px-1.5 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 outline-none text-black bg-white" value={activeSite.scrivenerId || ""} onChange={e => updateActiveSite({ scrivenerId: e.target.value })}>
-                        <option value="">司法書士: 未選択</option>
-                        {(scriveners || []).map(s => <option key={s.id} value={s.id}>{s.name || "(未入力)"}</option>)}
-                      </select>
                       <div className="flex items-center gap-0.5">
                         <select className="text-[10px] py-1 px-1.5 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 outline-none text-black bg-white" defaultValue="" onChange={e => { if (e.target.value) window.open(e.target.value, '_blank'); e.target.value = ''; }}>
                           <option value="" disabled>住居表示...</option>
@@ -230,7 +225,7 @@ export const Editor = ({ sites, setSites, activeSiteId, setActiveSiteId, contrac
         )}
       </div>
 
-      <MasterManagerModal isOpen={isMasterModalOpen} onClose={() => setIsMasterModalOpen(false)} contractors={contractors} setContractors={setContractors} scriveners={scriveners} setScriveners={setScriveners} />
+      <MasterManagerModal isOpen={isMasterModalOpen} onClose={() => setIsMasterModalOpen(false)} contractors={contractors} setContractors={setContractors} />
 
       <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title="新規現場の追加" footer={<><button onClick={() => setIsAddModalOpen(false)} className="px-4 py-2 text-sm font-medium text-black">キャンセル</button><button onClick={() => { if(!newSiteName.trim()) return; const s = createNewSite(newSiteName); setSites([...sites, s]); setActiveSiteId(s.id); setIsAddModalOpen(false); }} className="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold">追加</button></>}><input autoFocus type="text" className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-black font-bold" placeholder="案件名を入力" value={newSiteName} onChange={(e) => setNewSiteName(e.target.value)} onKeyDown={e => e.key === 'Enter' && newSiteName.trim() && (function(){ const s = createNewSite(newSiteName); setSites([...sites, s]); setActiveSiteId(s.id); setIsAddModalOpen(false); })()} /></Modal>
       <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title="現場の削除確認" footer={<><button onClick={() => setIsDeleteModalOpen(false)} className="px-4 py-2 text-sm font-medium text-black">キャンセル</button><button onClick={() => { const ns = sites.filter(s => s.id !== siteToDelete.id); setSites(ns); if(activeSiteId === siteToDelete.id) setActiveSiteId(ns[0]?.id || null); setIsDeleteModalOpen(false); }} className="bg-red-500 text-white px-6 py-2 rounded-lg font-bold">削除</button></>}><p className="text-sm font-bold text-black">「{siteToDelete?.name}」を削除しますか？</p></Modal>

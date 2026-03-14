@@ -160,7 +160,7 @@ export const createNewSite = (name) => ({
   address: '', land: [], buildings: [], proposedBuildings: [], people: [],
   applications: APPLICATION_TYPES.reduce((acc, type) => ({ ...acc, [type]: 0 }), {}),
   documents: {}, docPick: {},
-  contractorId: "", scrivenerId: ""
+  contractorId: ""
 });
 
 export const createDefaultCauseDate = () => ({ era: "令和", year: "", month: "", day: "", unknown: false });
@@ -344,7 +344,6 @@ export const formatShare = (share) => {
 };
 
 export const getSelectedContractor = (siteData, contractors) => (contractors || []).find(c => c.id === siteData.contractorId) || null;
-export const getSelectedScrivener = (siteData, scriveners) => (scriveners || []).find(s => s.id === siteData.scrivenerId) || null;
 
 export const formatWareki = (d, additionalUnknownDate = false) => {
   if (!d) return "　";

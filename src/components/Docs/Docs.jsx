@@ -8,7 +8,7 @@ import { CountRow } from '../ui/CountRow.jsx';
 import { DocRow } from '../ui/DocRow.jsx';
 import { DocTemplate } from '../DocTemplate/DocTemplate.jsx';
 
-export const Docs = ({ sites, setSites, contractors, scriveners }) => {
+export const Docs = ({ sites, setSites, contractors }) => {
   const [params] = useSearchParams();
   const siteId = params.get('siteId');
   const navigate = useNavigate();
@@ -420,7 +420,7 @@ ${styles}
       <div style={{ position: 'fixed', left: '-9999px', top: 0, zIndex: -1 }}><div id="print-area">
         {printInstances.map((inst, i) => (
           <div key={inst.key} data-doc-name={inst.name} className={`w-[210mm] h-[297mm] bg-white font-serif leading-relaxed ${i > 0 ? "break-before-page" : ""} relative`}>
-            <DocTemplate name={inst.name} siteData={siteData} instanceIndex={inst.index} instanceKey={inst.key} pick={siteData?.docPick?.[inst.key] || DEFAULT_PICK} isPrint={true} scriveners={scriveners} />
+            <DocTemplate name={inst.name} siteData={siteData} instanceIndex={inst.index} instanceKey={inst.key} pick={siteData?.docPick?.[inst.key] || DEFAULT_PICK} isPrint={true} />
           </div>
         ))}
       </div></div>
@@ -1064,72 +1064,6 @@ ${styles}
                     </div>
                   )}
 
-                  {activeInstance.name === "委任状（住所変更）" && (
-                    <div className="border-t pt-4 text-black">
-                      <label className="block text-[10px] font-bold text-gray-500 mb-2">
-                        表示する地番（複数選択可）
-                      </label>
-
-                      {(() => {
-                        const all = naturalSortList(siteData.land || [], "lotNumber");
-                        if (all.length === 0) {
-                          return <p className="text-[10px] text-slate-400">既登記土地情報が登録されていません。</p>;
-                        }
-
-                        const cur = Array.isArray(activePick.targetLandIds) ? activePick.targetLandIds : [];
-                        const curSet = new Set(cur.length ? cur : all.map(l => l.id));
-
-                        const toggleOne = (id) => {
-                          const base = new Set(cur.length ? cur : all.map(l => l.id));
-                          if (base.has(id)) base.delete(id);
-                          else base.add(id);
-                          if (base.size === 0) return;
-                          handlePickChange(activeInstanceKey, { targetLandIds: Array.from(base) });
-                        };
-
-                        const setAll = () => handlePickChange(activeInstanceKey, { targetLandIds: [] });
-
-                        return (
-                          <>
-                            {all.length >= 2 && (
-                              <button
-                                type="button"
-                                onClick={setAll}
-                                className="mb-2 w-full py-1.5 text-[9px] font-bold rounded bg-slate-100 hover:bg-slate-200"
-                              >
-                                全て選択に戻す
-                              </button>
-                            )}
-
-                            <div className="grid grid-cols-1 gap-1">
-                              {all.map((l) => (
-                                <label
-                                  key={l.id}
-                                  className={`flex items-center gap-2 p-1 rounded border text-[9px] cursor-pointer ${
-                                    curSet.has(l.id)
-                                      ? "bg-blue-50 border-blue-200 text-blue-700"
-                                      : "bg-white border-slate-200 text-slate-500"
-                                  }`}
-                                >
-                                  <input
-                                    type="checkbox"
-                                    className="w-3 h-3 rounded"
-                                    checked={curSet.has(l.id)}
-                                    onChange={() => toggleOne(l.id)}
-                                  />
-                                  <span className="truncate">
-                                    {l.lotNumber || "(地番未入力)"}{l.address ? `　${l.address}` : ""}
-                                  </span>
-                                </label>
-                              ))}
-                              <p className="text-[9px] text-slate-400 mt-1">※少なくとも1つは選択してください</p>
-                            </div>
-                          </>
-                        );
-                      })()}
-                    </div>
-                  )}
-
                   {(activeInstance.name === "滅失証明書（滅失）" || activeInstance.name === "滅失証明書（表題部変更）" || activeInstance.name === "非登載証明書") && (
                     <div>
                       <div className="space-y-3">
@@ -1645,7 +1579,7 @@ ${styles}
                   <div ref={docContainerRef} onClick={handleContainerClick} className="document-container w-[210mm] h-[297mm] bg-white shadow-2xl font-serif leading-relaxed text-slate-900 border border-slate-100 relative">
                     <DocTemplate name={activeInstance.name} siteData={siteData} instanceIndex={activeInstance.index}
                        instanceKey={activeInstanceKey}
-                      pick={activePick} onPickChange={(p) => handlePickChange(activeInstanceKey, p)} onStampPosChange={handleStampPosChange} onSignerStampPosChange={handleSignerStampPosChange} isPrint={false} scriveners={scriveners}
+                      pick={activePick} onPickChange={(p) => handlePickChange(activeInstanceKey, p)} onStampPosChange={handleStampPosChange} onSignerStampPosChange={handleSignerStampPosChange} isPrint={false}
                       selectedItems={selectedItems} onItemSelect={onItemSelect} />
                   </div>
                 </div>
