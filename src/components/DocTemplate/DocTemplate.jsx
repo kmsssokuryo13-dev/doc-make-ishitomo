@@ -1,18 +1,17 @@
 import React, { useMemo } from 'react';
 import {
-  toFullWidthDigits, naturalSortList, formatWareki, getSelectedScrivener,
+  toFullWidthDigits, naturalSortList, formatWareki,
   formatConfirmationCertLine, formatShare
 } from '../../utils.js';
 import {
-  DOC_PAGE_PADDING, DEFAULT_DELEGATION_TEXT, DEFAULT_DELEGATION_TEXT_SAVE,
-  DEFAULT_DELEGATION_TEXT_ADDRESS_CHANGE
+  DOC_PAGE_PADDING, DEFAULT_DELEGATION_TEXT
 } from '../../constants.js';
 import { EditableDocBody } from './EditableDocBody.jsx';
 import { MovableItem } from './MovableItem.jsx';
 
 export const DocTemplate = ({
   name, siteData, instanceKey, pick, onPickChange,
-  onStampPosChange, onSignerStampPosChange, isPrint, instanceIndex, scriveners,
+  onStampPosChange, onSignerStampPosChange, isPrint, instanceIndex,
   selectedItems, onItemSelect,
 }) => {
   const itemOffsets = pick?.itemOffsets || {};
@@ -57,26 +56,6 @@ export const DocTemplate = ({
     const filtered = statementCandidates.filter(p => set.has(p.id));
     return filtered.length ? filtered : statementCandidates;
   }, [statementCandidates, pick?.statementPersonIds]);
-
-  const linkedScrivener = useMemo(
-    () => getSelectedScrivener(siteData, scriveners),
-    [siteData?.scrivenerId, scriveners]
-  );
-
-  const getLinkedScrivenerLines = () => {
-    if (!linkedScrivener) return ["　", "　"];
-    return [linkedScrivener.address || "　", linkedScrivener.name || "　"];
-  };
-
-  const useLinkedScrivenerOnTopRight =
-    name === "委任状（保存）" || name === "委任状（住所変更）";
-
-  const [linkedScrivenerAddrLine, linkedScrivenerNameLine] = getLinkedScrivenerLines();
-
-  if (name === "委任状（保存）") {
-    const p = pick || {};
-    pick = { ...p, showAnnex: false };
-  }
 
   // 印字位置オフセット
   const printOffsetX = pick?.printOffsetX ?? 0;
@@ -125,7 +104,6 @@ export const DocTemplate = ({
   };
 
   const floorLine = (floorAreas) => {
-    if (name === "委任状（保存）") return "";
     const arr = Array.isArray(floorAreas) ? floorAreas : [];
     const filtered = arr.filter(fa => stripAllWS(fa.area));
     if (filtered.length === 0) return "";
@@ -166,10 +144,6 @@ export const DocTemplate = ({
   };
 
   const buildKindStructAreaLine = (symbolPrefix, kind, struct, floorAreas) => {
-    if (name === "委任状（保存）") {
-      const sym = symbolPrefix || "";
-      return sym ? `${sym}` : "　";
-    }
     const k = kind || "　";
     const areas = floorLineInline(floorAreas);
     const parts = [symbolPrefix + k];
@@ -186,7 +160,7 @@ export const DocTemplate = ({
         <div>{b.address || "　"}</div>
         {showHouseNum && b.houseNum ? (
           <div style={{ fontWeight: 'bold' }}>
-            {name === "委任状（保存）" ? `家屋番号　${b.houseNum}　の建物` : b.houseNum}
+            {b.houseNum}
           </div>
         ) : null}
         <div>{line}</div>
@@ -221,12 +195,10 @@ export const DocTemplate = ({
         <div>{b.address || "　"}</div>
         {showHouseNum && b.houseNum ? (
           <div style={{ fontWeight: 'bold' }}>
-            {name === "委任状（保存）" ? `家屋番号 ${b.houseNum}の建物` : b.houseNum}
+            {b.houseNum}
           </div>
         ) : null}
-        {name === "委任状（保存）" ? null : (
-          <div>{(b.kind || "　")}{b.struct ? `　${b.struct}` : ""}</div>
-        )}
+        <div>{(b.kind || "　")}{b.struct ? `　${b.struct}` : ""}</div>
         <div>{floorLine(b.floorAreas)}</div>
       </div>
     );
@@ -237,9 +209,7 @@ export const DocTemplate = ({
     return (
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         <div style={{ fontWeight: 'bold' }}>{a.symbol || "無符号"}</div>
-        {name === "委任状（保存）" ? null : (
-          <div>{(a.kind || "　")}{a.struct ? `　${a.struct}` : ""}</div>
-        )}
+        <div>{(a.kind || "　")}{a.struct ? `　${a.struct}` : ""}</div>
         <div>{floorLine(a.floorAreas)}</div>
       </div>
     );
@@ -803,31 +773,31 @@ export const DocTemplate = ({
               onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
             >
               <MI id="delegation-work">
-                <div style={{ fontSize: '11pt', marginTop: '36mm', marginBottom: '10mm', fontWeight: 'bold' }}>
+                <div style={{ fontSize: '11pt', marginTop: '86mm', marginBottom: '3mm', fontWeight: 'bold' }}>
                   {workText}
                 </div>
               </MI>
 
               <MI id="delegation-building">
-                <div style={{ marginTop: '-5mm' }}>
+                <div style={{ marginTop: '12mm' }}>
                   {buildingSubTitle && <div style={{ fontSize: '11pt', margin: '2mm 0 0 0', fontWeight: 'bold' }}>{buildingSubTitle}</div>}
-                  <div style={{ fontSize: '11pt', marginBottom: '10mm' }}>
+                  <div style={{ fontSize: '11pt', marginBottom: '5mm' }}>
                     {buildingBlock}
                   </div>
                 </div>
               </MI>
 
               <MI id="delegation-date">
-                <div style={{ fontSize: '11pt', marginBottom: '8mm' }}>
+                <div style={{ fontSize: '11pt', marginBottom: '5mm' }}>
                   {dateBlock ?? formatTodayDateBlock()}
                 </div>
               </MI>
 
               <MI id="delegation-signers">
                 <div style={{ fontSize: '11pt' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2mm', paddingRight: 'calc(1em + 26.6mm)' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0mm', paddingRight: 'calc(1em + 27.5mm)' }}>
                     {signers.map((p, i) => (
-                      <div key={p.id || i} style={{ display: 'flex', alignItems: 'center', minHeight: '26.6mm' }}>{formatApplicantShareOnly(p)}</div>
+                      <div key={p.id || i} style={{ display: 'flex', alignItems: 'center', minHeight: '27.5mm' }}>{formatApplicantShareOnly(p)}</div>
                     ))}
                   </div>
                 </div>
@@ -884,23 +854,6 @@ export const DocTemplate = ({
     </>
   );
 
-  const DelegationSaveTemplate = () => {
-    const b = (typeof targetProp !== "undefined" && targetProp) ? targetProp : (sortedProp?.[0] || null);
-    const workText = "登記の目的　所有権保存登記";
-
-    const buildingBlock = b ? (
-      <div style={{ marginBottom: '6mm' }}>
-        {(pick.showMain ?? true) && renderMainValues(b, { showHouseNum: true })}
-        {(pick.showAnnex ?? true) && (b.annexes || []).map(a => (
-          <div key={a.id}>{renderAnnexValues(a)}</div>
-        ))}
-      </div>
-    ) : (
-      <div>　</div>
-    );
-
-    return renderDelegationCommon({ docNoBold: false, workText, buildingBlock });
-  };
 
   const DelegationLandCategoryChangeTemplate = () => {
     const changedLands = (selectedLand || []).filter(l => l.categoryChangeEnabled);
@@ -1150,45 +1103,6 @@ export const DocTemplate = ({
     });
   };
 
-  const DelegationAddressChangeTemplate = () => {
-    const workText = (
-      <>
-        <div style={{ whiteSpace: 'pre-wrap' }}>
-             登 記 の 目 的　　　所有権登記名義人住所変更
-        </div>
-        <div>原　　　　　因</div>
-        <div>変更すべき事項</div>
-        <div>　</div>
-        <div>　</div>
-      </>
-    );
-
-    const landBlock = (selectedLand || []).length ? (
-      <div style={{ marginBottom: '6mm' }}>
-        {(selectedLand || []).map((l, idx) => (
-          <div key={l.id || idx} style={{ whiteSpace: 'pre-wrap' }}>
-            <div>
-              {(l.address || "　")}
-              {""}
-              {(l.lotNumber || "　")}
-              {"　"}
-              {(l.category || "　")}
-              {"　"}
-              {`${l.area || "　"}㎡`}
-            </div>
-          </div>
-        ))}
-      </div>
-    ) : (
-      <div>　</div>
-    );
-
-    return renderDelegationCommon({
-      docNoBold: false, workText,
-      buildingTitle: "物件の表示", buildingBlock: landBlock,
-      dateBlock: buildCommonDateBlock(),
-    });
-  };
 
     const DelegationTitleCorrectionTemplate = () => {
       const sortedBuildings = naturalSortList(siteData.buildings || [], 'houseNum');
@@ -1474,11 +1388,9 @@ export const DocTemplate = ({
 
   const DELEGATION_TEMPLATES = {
     "委任状（表題）": DelegationTitleTemplate,
-    "委任状（保存）": DelegationSaveTemplate,
     "委任状（地目変更）": DelegationLandCategoryChangeTemplate,
     "委任状（滅失）": DelegationLossTemplate,
     "委任状（表題部変更）": DelegationTitleChangeTemplate,
-    "委任状（住所変更）": DelegationAddressChangeTemplate,
     "委任状（表題部更正）": DelegationTitleCorrectionTemplate,
     "委任状（合併）": DelegationMergeTemplate,
     "委任状（分割）": DelegationSplitTemplate,
@@ -1493,7 +1405,7 @@ export const DocTemplate = ({
   // 申述書系（共有 / 単独）
   // ==========================
 
-  const renderStatementCommon = ({ titleText, defaultBody }) => {
+  const renderStatementCommon = ({ titleText, defaultBody, buildingMarginTop = '36mm' }) => {
     const hasMultipleStatementPeople = (statementPeople || []).length >= 2;
     // 石友版: 持分のみ表示（住所・氏名は非表示）、showStatementShareトグルで制御
     const showShare = pick?.showStatementShare ?? true;
@@ -1526,7 +1438,7 @@ export const DocTemplate = ({
               onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
             >
               <MI id="statement-building">
-                <div style={{ fontSize: "11pt", marginTop: '36mm', marginBottom: "8mm" }}>{buildingBlock}</div>
+                <div style={{ fontSize: "11pt", marginTop: buildingMarginTop, marginBottom: "8mm" }}>{buildingBlock}</div>
               </MI>
 
               <MI id="statement-confirm">
@@ -1608,7 +1520,7 @@ export const DocTemplate = ({
               onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
             >
               <MI id="sale-building">
-                <div style={{ fontSize: '11pt', marginTop: '36mm', marginBottom: '4mm' }}>
+                <div style={{ fontSize: '11pt', marginTop: '39mm', marginBottom: '4mm' }}>
                   {saleBuilding ? (
                     <>
                       {(pick.showMain ?? true) && renderMainValuesInline(saleBuilding, { showHouseNum: false })}
@@ -1656,6 +1568,7 @@ export const DocTemplate = ({
     return renderStatementCommon({
       titleText: "申述書",
       defaultBody: "上記の建物は下記の通りの持分であることを証明します。",
+      buildingMarginTop: '48mm',
     });
   }
 
@@ -1669,6 +1582,7 @@ export const DocTemplate = ({
     return renderStatementCommon({
       titleText: "申述書",
       defaultBody: body,
+      buildingMarginTop: '41mm',
     });
   }
 

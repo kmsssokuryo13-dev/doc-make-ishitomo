@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
-import { APP_STATE_STORAGE_KEY, CONTRACTORS_STORAGE_KEY, SCRIVENERS_STORAGE_KEY } from './constants.js';
-import { sanitizeSiteData, sanitizeContractors, sanitizeScriveners } from './sanitize.js';
+import { APP_STATE_STORAGE_KEY, CONTRACTORS_STORAGE_KEY } from './constants.js';
+import { sanitizeSiteData, sanitizeContractors } from './sanitize.js';
 import { ErrorBoundary } from './components/ui/ErrorBoundary.jsx';
 import { Editor } from './components/Editor/Editor.jsx';
 import { Docs } from './components/Docs/Docs.jsx';
@@ -11,18 +11,14 @@ const App = () => {
   const [activeSiteId, setActiveSiteId] = useState(null);
   const [hydrated, setHydrated] = useState(false);
   const [contractors, setContractors] = useState([]);
-  const [scriveners, setScriveners] = useState([]);
   const didInitRef = useRef(false);
 
   useEffect(() => {
     const savedC = localStorage.getItem(CONTRACTORS_STORAGE_KEY);
-    const savedS = localStorage.getItem(SCRIVENERS_STORAGE_KEY);
     if (savedC) { try { setContractors(sanitizeContractors(JSON.parse(savedC))); } catch(e) {} }
-    if (savedS) { try { setScriveners(sanitizeScriveners(JSON.parse(savedS))); } catch(e) {} }
   }, []);
 
   useEffect(() => { localStorage.setItem(CONTRACTORS_STORAGE_KEY, JSON.stringify(contractors)); }, [contractors]);
-  useEffect(() => { localStorage.setItem(SCRIVENERS_STORAGE_KEY, JSON.stringify(scriveners)); }, [scriveners]);
 
   useEffect(() => {
     try {
@@ -77,9 +73,9 @@ const App = () => {
     <ErrorBoundary>
       <HashRouter>
         <Routes>
-          <Route path="/" element={<Editor sites={sites} setSites={setSites} activeSiteId={activeSiteId} setActiveSiteId={setActiveSiteId} contractors={contractors} setContractors={setContractors} scriveners={scriveners} setScriveners={setScriveners} />} />
-          <Route path="/docs" element={<Docs sites={sites} setSites={setSites} contractors={contractors} scriveners={scriveners} />} />
-          <Route path="*" element={<Editor sites={sites} setSites={setSites} activeSiteId={activeSiteId} setActiveSiteId={setActiveSiteId} contractors={contractors} setContractors={setContractors} scriveners={scriveners} setScriveners={setScriveners} />} />
+          <Route path="/" element={          <Editor sites={sites} setSites={setSites} activeSiteId={activeSiteId} setActiveSiteId={setActiveSiteId} contractors={contractors} setContractors={setContractors} />} />
+                    <Route path="/docs" element={<Docs sites={sites} setSites={setSites} contractors={contractors} />} />
+                    <Route path="*" element={<Editor sites={sites} setSites={setSites} activeSiteId={activeSiteId} setActiveSiteId={setActiveSiteId} contractors={contractors} setContractors={setContractors} />} />
         </Routes>
       </HashRouter>
     </ErrorBoundary>

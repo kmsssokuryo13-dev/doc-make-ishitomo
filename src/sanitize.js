@@ -159,8 +159,7 @@ export const sanitizeSiteData = (raw = {}) => {
     applications: stableSortKeys({ ...baseApplications, ...(raw.applications || {}) }),
     documents: stableSortKeys(typeof raw.documents === "object" && raw.documents ? raw.documents : {}),
     docPick: stableSortKeys(typeof raw.docPick === "object" && raw.docPick ? raw.docPick : {}),
-    contractorId: raw.contractorId || "",
-    scrivenerId: raw.scrivenerId || ""
+    contractorId: raw.contractorId || ""
   };
 };
 
@@ -171,14 +170,5 @@ export const sanitizeContractors = (list) => {
     address: c.address || "",
     tradeName: c.tradeName || c.name || "",
     representative: c.representative || ""
-  }));
-};
-
-export const sanitizeScriveners = (list) => {
-  if (!Array.isArray(list)) return [];
-  return list.map(s => ({
-    id: s.id || generateId(),
-    address: s.address || "",
-    name: s.name || ""
   }));
 };
