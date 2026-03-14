@@ -242,33 +242,29 @@ export const Docs = ({ sites, setSites, contractors, scriveners }) => {
     selectedItemsRef.current = new Set();
   }, [activeInstanceKey]);
 
-  // Delegated click handler for MovableItem selection (contentEditable intercepts normal onClick)
-  useEffect(() => {
-    if (step !== 3) return;
+  // Delegated click handler for MovableItem selection (contentEditable intercepts normal onClick).
+  // Uses React onClick on the container div (see JSX below) instead of addEventListener for reliability.
+  const handleContainerClick = useCallback((e) => {
     const container = docContainerRef.current;
     if (!container) return;
-    const handler = (e) => {
-      let el = e.target;
-      let itemId = null;
-      while (el && el !== container) {
-        if (el.dataset && el.dataset.movableItem) {
-          itemId = el.dataset.movableItem;
-          break;
-        }
-        el = el.parentElement;
+    let el = e.target;
+    let itemId = null;
+    while (el && el !== container) {
+      if (el.dataset && el.dataset.movableItem) {
+        itemId = el.dataset.movableItem;
+        break;
       }
-      if (itemId) {
-        const addToSelection = e.ctrlKey || e.metaKey || e.shiftKey;
-        onItemSelect(itemId, addToSelection);
-        // Blur contentEditable so arrow keys work for movement
-        if (document.activeElement && document.activeElement.contentEditable === 'true') {
-          document.activeElement.blur();
-        }
+      el = el.parentElement;
+    }
+    if (itemId) {
+      const addToSelection = e.ctrlKey || e.metaKey || e.shiftKey;
+      onItemSelect(itemId, addToSelection);
+      // Blur contentEditable so arrow keys work for movement
+      if (document.activeElement && document.activeElement.contentEditable === 'true') {
+        document.activeElement.blur();
       }
-    };
-    container.addEventListener('click', handler);
-    return () => container.removeEventListener('click', handler);
-  }, [step, onItemSelect]);
+    }
+  }, [onItemSelect]);
 
   // Sync selection visual state to DOM directly (bypasses contentEditable innerHTML copy issue).
   // Uses requestAnimationFrame to run after EditableDocBody's useLayoutEffect copies innerHTML.
@@ -1646,7 +1642,7 @@ ${styles}
             <div className="flex-1 flex flex-col items-center overflow-y-auto custom-scrollbar bg-slate-200 shadow-inner rounded-xl">
               {activeInstance ? (
                 <div className="p-10">
-                  <div ref={docContainerRef} className="document-container w-[210mm] h-[297mm] bg-white shadow-2xl font-serif leading-relaxed text-slate-900 border border-slate-100 relative">
+                  <div ref={docContainerRef} onClick={handleContainerClick} className="document-container w-[210mm] h-[297mm] bg-white shadow-2xl font-serif leading-relaxed text-slate-900 border border-slate-100 relative">
                     <DocTemplate name={activeInstance.name} siteData={siteData} instanceIndex={activeInstance.index}
                        instanceKey={activeInstanceKey}
                       pick={activePick} onPickChange={(p) => handlePickChange(activeInstanceKey, p)} onStampPosChange={handleStampPosChange} onSignerStampPosChange={handleSignerStampPosChange} isPrint={false} scriveners={scriveners}
