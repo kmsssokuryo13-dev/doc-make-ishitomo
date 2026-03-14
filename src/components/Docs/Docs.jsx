@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Printer, RotateCcw as ResetIcon, Loader2 } from 'lucide-react';
 import { naturalSortList, stableSortKeys, getOrderedDocs, formatWareki } from '../../utils.js';
@@ -17,6 +17,8 @@ export const Docs = ({ sites, setSites, contractors, scriveners }) => {
   const [activeInstanceKey, setActiveInstanceKey] = useState("");
   const [isPrinting, setIsPrinting] = useState(false);
   const [showPrintPanel, setShowPrintPanel] = useState(false);
+  const [selectedItems, setSelectedItems] = useState(new Set());
+  const selectedItemsRef = useRef(new Set());
 
   const orderedDocs = useMemo(() => siteData ? getOrderedDocs(siteData.applications || {}) : [], [siteData?.applications]);
 
@@ -47,7 +49,8 @@ export const Docs = ({ sites, setSites, contractors, scriveners }) => {
     saleBuildingSource: "proposed",
     saleSellerPersonIds: [],
     printOffsetX: 0,
-    printOffsetY: 0
+    printOffsetY: 0,
+    itemOffsets: {}
   };
 
   const allInstances = useMemo(() => {
@@ -217,6 +220,59 @@ export const Docs = ({ sites, setSites, contractors, scriveners }) => {
     next.push({ i: index, dx: nextDx, dy: nextDy });
     handlePickChange(activeInstanceKey, { signerStampPositions: next });
   };
+
+  // --- Per-item selection & movement ---
+  const onItemSelect = useCallback((itemId, addToSelection) => {
+    setSelectedItems(prev => {
+      const next = new Set(addToSelection ? prev : []);
+      if (next.has(itemId) && addToSelection) {
+        next.delete(itemId);
+      } else {
+        next.add(itemId);
+      }
+      selectedItemsRef.current = next;
+      return next;
+    });
+  }, []);
+
+  // Clear selection when switching active document
+  useEffect(() => {
+    setSelectedItems(new Set());
+    selectedItemsRef.current = new Set();
+  }, [activeInstanceKey]);
+
+  // Arrow key handler for moving selected items
+  useEffect(() => {
+    if (step !== 3) return;
+    const handler = (e) => {
+      const sel = selectedItemsRef.current;
+      if (!sel || sel.size === 0) return;
+      const ARROWS = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
+      const delta = ARROWS[e.key];
+      if (!delta) return;
+      // Don't intercept if user is typing in an input/textarea
+      const tag = document.activeElement?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      e.preventDefault();
+      const [dx, dy] = delta;
+      const moveStep = e.shiftKey ? 5 : 1;
+      // Update itemOffsets for all selected items
+      setSites(prev => prev.map(s => {
+        if (s.id !== siteId) return s;
+        const pickMap = { ...(s.docPick || {}) };
+        const currentPick = { ...DEFAULT_PICK, ...(pickMap[activeInstanceKey] || {}) };
+        const offsets = { ...(currentPick.itemOffsets || {}) };
+        sel.forEach(id => {
+          const cur = offsets[id] || { x: 0, y: 0 };
+          offsets[id] = { x: cur.x + dx * moveStep, y: cur.y + dy * moveStep };
+        });
+        pickMap[activeInstanceKey] = { ...currentPick, itemOffsets: offsets };
+        return { ...s, docPick: pickMap };
+      }));
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [step, siteId, activeInstanceKey, setSites]);
 
   const printInstances = useMemo(() => allInstances.filter(inst => (siteData?.docPick?.[inst.key]?.printOn ?? true)), [allInstances, siteData?.docPick]);
 
@@ -1478,52 +1534,59 @@ ${styles}
                   })()}
 
                   <div className="border-t pt-4 text-black">
-                    <label className="block text-[10px] font-bold text-gray-500 mb-2">印字位置調整（px）</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="block text-[9px] text-gray-400 mb-0.5">左右（＋で右）</label>
-                        <input
-                          type="number"
-                          className="w-full text-xs p-1.5 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 outline-none text-black bg-white"
-                          value={activePick.printOffsetX ?? 0}
-                          onChange={e => handlePickChange(activeInstanceKey, { printOffsetX: Number(e.target.value) || 0 })}
-                          step={1}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[9px] text-gray-400 mb-0.5">上下（＋で下）</label>
-                        <input
-                          type="number"
-                          className="w-full text-xs p-1.5 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 outline-none text-black bg-white"
-                          value={activePick.printOffsetY ?? 0}
-                          onChange={e => handlePickChange(activeInstanceKey, { printOffsetY: Number(e.target.value) || 0 })}
-                          step={1}
-                        />
-                      </div>
-                    </div>
-                    <div className="flex gap-1 mt-2">
-                      {[-5, -1, 1, 5].map(d => (
-                        <button key={`x${d}`} onClick={() => handlePickChange(activeInstanceKey, { printOffsetX: (activePick.printOffsetX ?? 0) + d })}
-                          className="flex-1 text-[8px] py-1 bg-slate-100 hover:bg-slate-200 rounded font-bold">
-                          {d > 0 ? `右+${d}` : `左${d}`}
+                    <label className="block text-[10px] font-bold text-gray-500 mb-2">項目別 位置調整</label>
+                    <p className="text-[8px] text-gray-400 mb-2 leading-relaxed">
+                      プレビュー上の項目をクリックで選択（Ctrl/Cmd+クリックで複数選択可）。<br/>
+                      選択した項目を矢印キーで移動（Shift+矢印で5px単位）。
+                    </p>
+                    {selectedItems.size > 0 && (
+                      <div className="mb-2">
+                        <div className="text-[9px] text-blue-600 font-bold mb-1">
+                          {selectedItems.size}個の項目を選択中
+                        </div>
+                        <div className="flex gap-1">
+                          {[-5, -1, 1, 5].map(d => (
+                            <button key={`x${d}`} onClick={() => {
+                              const offsets = { ...(activePick.itemOffsets || {}) };
+                              selectedItems.forEach(id => {
+                                const cur = offsets[id] || { x: 0, y: 0 };
+                                offsets[id] = { x: cur.x + d, y: cur.y };
+                              });
+                              handlePickChange(activeInstanceKey, { itemOffsets: offsets });
+                            }}
+                              className="flex-1 text-[8px] py-1 bg-slate-100 hover:bg-slate-200 rounded font-bold">
+                              {d > 0 ? `右+${d}` : `左${d}`}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="flex gap-1 mt-1">
+                          {[-5, -1, 1, 5].map(d => (
+                            <button key={`y${d}`} onClick={() => {
+                              const offsets = { ...(activePick.itemOffsets || {}) };
+                              selectedItems.forEach(id => {
+                                const cur = offsets[id] || { x: 0, y: 0 };
+                                offsets[id] = { x: cur.x, y: cur.y + d };
+                              });
+                              handlePickChange(activeInstanceKey, { itemOffsets: offsets });
+                            }}
+                              className="flex-1 text-[8px] py-1 bg-slate-100 hover:bg-slate-200 rounded font-bold">
+                              {d > 0 ? `下+${d}` : `上${d}`}
+                            </button>
+                          ))}
+                        </div>
+                        <button onClick={() => { setSelectedItems(new Set()); selectedItemsRef.current = new Set(); }}
+                          className="w-full mt-1 text-[8px] py-1 bg-slate-100 hover:bg-slate-200 rounded font-bold">
+                          選択解除
                         </button>
-                      ))}
-                    </div>
-                    <div className="flex gap-1 mt-1">
-                      {[-5, -1, 1, 5].map(d => (
-                        <button key={`y${d}`} onClick={() => handlePickChange(activeInstanceKey, { printOffsetY: (activePick.printOffsetY ?? 0) + d })}
-                          className="flex-1 text-[8px] py-1 bg-slate-100 hover:bg-slate-200 rounded font-bold">
-                          {d > 0 ? `下+${d}` : `上${d}`}
-                        </button>
-                      ))}
-                    </div>
-                    <button onClick={() => handlePickChange(activeInstanceKey, { printOffsetX: 0, printOffsetY: 0 })}
+                      </div>
+                    )}
+                    <button onClick={() => handlePickChange(activeInstanceKey, { itemOffsets: {} })}
                       className="w-full mt-1 text-[8px] py-1 bg-slate-100 hover:bg-slate-200 rounded font-bold text-red-500">
-                      位置リセット
+                      全項目の位置リセット
                     </button>
                   </div>
 
-                  <div className="border-t pt-2 space-y-2 font-sans font-bold"><button onClick={() => handlePickChange(activeInstanceKey, { customText: null })} className="w-full flex items-center justify-center gap-1.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-[9px] font-bold rounded"><ResetIcon size={12} /> 文言をリセット</button><button onClick={() => handlePickChange(activeInstanceKey, { stampPositions: null, signerStampPositions: null })} className="w-full flex items-center justify-center gap-1.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-[9px] font-bold rounded"><ResetIcon size={12} /> 位置をリセット</button></div>
+                  <div className="border-t pt-2 space-y-2 font-sans font-bold"><button onClick={() => handlePickChange(activeInstanceKey, { customText: null })} className="w-full flex items-center justify-center gap-1.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-[9px] font-bold rounded"><ResetIcon size={12} /> 文言をリセット</button><button onClick={() => handlePickChange(activeInstanceKey, { itemOffsets: {} })} className="w-full flex items-center justify-center gap-1.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-[9px] font-bold rounded"><ResetIcon size={12} /> 位置をリセット</button></div>
                 </div>
               )}
             </div>
@@ -1534,7 +1597,8 @@ ${styles}
                   <div className="document-container w-[210mm] h-[297mm] bg-white shadow-2xl font-serif leading-relaxed text-slate-900 border border-slate-100 relative">
                     <DocTemplate name={activeInstance.name} siteData={siteData} instanceIndex={activeInstance.index}
                        instanceKey={activeInstanceKey}
-                      pick={activePick} onPickChange={(p) => handlePickChange(activeInstanceKey, p)} onStampPosChange={handleStampPosChange} onSignerStampPosChange={handleSignerStampPosChange} isPrint={false} scriveners={scriveners} />
+                      pick={activePick} onPickChange={(p) => handlePickChange(activeInstanceKey, p)} onStampPosChange={handleStampPosChange} onSignerStampPosChange={handleSignerStampPosChange} isPrint={false} scriveners={scriveners}
+                      selectedItems={selectedItems} onItemSelect={onItemSelect} />
                   </div>
                 </div>
               ) : <div className="flex items-center text-slate-400 italic h-full font-bold">書類を選択してください</div>}
