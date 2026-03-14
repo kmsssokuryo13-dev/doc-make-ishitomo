@@ -24,7 +24,7 @@ export const DocTemplate = ({
       selected={selectedItems}
       onSelect={onItemSelect}
       isPrint={isPrint}
-      style={style}
+      style={{ paddingLeft: '1em', ...style }}
     >
       {children}
     </MovableItem>
@@ -88,20 +88,6 @@ export const DocTemplate = ({
     return { era: "", year: String(y) };
   };
 
-  const formatTodayDateBlock = () => {
-    const w = getWarekiNow();
-    return toFullWidthDigits(`${w.era}${w.year}年　　月　　日`);
-  };
-
-  const formatDateBlock = (d) => {
-    if (!d) return "令和年　　月　　日";
-    const stripWS= (s) =>
-      (s ?? "").toString().replace(/[\s\u3000\u00A0\u2000-\u200B\u202F\u205F\uFEFF]/g, "");
-    const era = stripWS(d.era);
-    const year = stripWS(d.year);
-    const y = year || "　";
-    return toFullWidthDigits(`${era}${y}年　　月　　日`);
-  };
 
   const floorLine = (floorAreas) => {
     const arr = Array.isArray(floorAreas) ? floorAreas : [];
@@ -275,8 +261,6 @@ export const DocTemplate = ({
   // ---- 工事完了引渡証明書（表題） ----
   if (name === "工事完了引渡証明書（表題）") {
     if (!targetProp) return <div className="p-10 text-center font-bold text-black">申請建物データがありません</div>;
-    const currentYearReiwa = String(new Date().getFullYear() - 2018);
-
     return (
       <div className="doc-content flex flex-col h-full text-black font-serif relative doc-no-bold" style={{ fontFamily: '"MS Mincho","ＭＳ 明朝",serif', ...printOffsetStyle }}>
         <div style={{ position: 'absolute', inset: 0, padding: DOC_PAGE_PADDING, boxSizing: 'border-box', pointerEvents: 'none' }}>
@@ -311,11 +295,6 @@ export const DocTemplate = ({
                 </div>
               </MI>
 
-              <MI id="completion-title-date">
-                <div style={{ textAlign: 'left', fontSize: '12pt', marginBottom: '10mm' }}>
-                  <p>令和{toFullWidthDigits(currentYearReiwa)}年　　月　　日</p>
-                </div>
-              </MI>
             </EditableDocBody>
           </div>
         </div>
@@ -334,7 +313,6 @@ export const DocTemplate = ({
       return sortedBuildings;
     })();
     const propsToUse = targetProp ? [targetProp] : sortedProp;
-    const currentYearReiwa = String(new Date().getFullYear() - 2018);
 
     const hasAnyAnnexes = beforeBuildings.some(b => (b.annexes || []).length > 0)
       || propsToUse.some(b => (b.annexes || []).length > 0);
@@ -434,11 +412,6 @@ export const DocTemplate = ({
                 </div>
               </MI>
 
-              <MI id="completion-change-date">
-                <div style={{ textAlign: 'left', fontSize: '12pt', marginBottom: '10mm' }}>
-                  <p>令和{toFullWidthDigits(currentYearReiwa)}年　　月　　日</p>
-                </div>
-              </MI>
             </EditableDocBody>
           </div>
         </div>
@@ -512,11 +485,6 @@ export const DocTemplate = ({
             </div>
           </MI>
 
-          <MI id="loss-cert-date">
-            <div style={{ textAlign: 'left', fontSize: '12pt', marginBottom: '10mm' }}>
-              <p>{formatTodayDateBlock()}</p>
-            </div>
-          </MI>
         </EditableDocBody>
         </div>
       </div>
@@ -636,11 +604,6 @@ export const DocTemplate = ({
             </div>
           </MI>
 
-          <MI id="loss-change-date">
-            <div style={{ textAlign: 'left', fontSize: '12pt', marginBottom: '10mm' }}>
-              <p>{formatTodayDateBlock()}</p>
-            </div>
-          </MI>
         </EditableDocBody>
         </div>
       </div>
@@ -688,9 +651,8 @@ export const DocTemplate = ({
           onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
         >
           <MI id="ntr-header">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', fontSize: '12pt', marginBottom: '2mm' }}>
+            <div style={{ fontSize: '12pt', marginBottom: '2mm' }}>
               <div>{getMayorTitle()}　殿</div>
-              <div>{formatTodayDateBlock()}</div>
             </div>
           </MI>
 
@@ -755,7 +717,6 @@ export const DocTemplate = ({
     buildingTitle = "建物の表示",
     buildingSubTitle,
     buildingBlock,
-    dateBlock,
     topRightBlock,
     signerList,
   }) => {
@@ -787,13 +748,7 @@ export const DocTemplate = ({
                 </div>
               </MI>
 
-              <MI id="delegation-date">
-                <div style={{ fontSize: '11pt', marginBottom: '5mm' }}>
-                  {dateBlock ?? formatTodayDateBlock()}
-                </div>
-              </MI>
-
-              <MI id="delegation-signers">
+              <MI id="delegation-signers" style={{ paddingLeft: 0 }}>
                 <div style={{ fontSize: '11pt' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0mm', paddingRight: 'calc(1em + 27.5mm)' }}>
                     {signers.map((p, i) => (
@@ -828,13 +783,7 @@ export const DocTemplate = ({
       <div>　</div>
     );
 
-    const dateBlock = (
-      <p style={{ margin: '0 0 1mm 0' }}>
-        {formatTodayDateBlock()}
-      </p>
-    );
-
-    return renderDelegationCommon({ docNoBold: true, workText, buildingBlock, dateBlock });
+    return renderDelegationCommon({ docNoBold: true, workText, buildingBlock });
   };
 
   const buildCommonBuildingBlock = () => {
@@ -847,12 +796,6 @@ export const DocTemplate = ({
       </div>
     ));
   };
-
-  const buildCommonDateBlock = () => (
-    <>
-      {formatTodayDateBlock()}
-    </>
-  );
 
 
   const DelegationLandCategoryChangeTemplate = () => {
@@ -921,7 +864,6 @@ export const DocTemplate = ({
     return renderDelegationCommon({
       docNoBold: false, workText,
       buildingTitle: "土地の表示", buildingSubTitle: "変更前", buildingBlock,
-      dateBlock: buildCommonDateBlock(),
       signerList: landCategorySigners,
     });
   };
@@ -972,7 +914,7 @@ export const DocTemplate = ({
 
     return renderDelegationCommon({
       docNoBold: false, workText,
-      buildingBlock, dateBlock: buildCommonDateBlock(),
+      buildingBlock,
       signerList: lossSigners,
     });
   };
@@ -1099,7 +1041,6 @@ export const DocTemplate = ({
       buildingTitle: "建物の表示",
       buildingSubTitle: "変更前",
       buildingBlock,
-      dateBlock: buildCommonDateBlock(),
     });
   };
 
@@ -1161,7 +1102,6 @@ export const DocTemplate = ({
         buildingTitle: "建物の表示",
         buildingSubTitle: "更正前",
         buildingBlock,
-        dateBlock: buildCommonDateBlock(),
       });
   };
 
@@ -1219,7 +1159,6 @@ export const DocTemplate = ({
       buildingTitle: "建物の表示",
       buildingSubTitle: "合併前",
       buildingBlock,
-      dateBlock: buildCommonDateBlock(),
     });
   };
 
@@ -1283,7 +1222,6 @@ export const DocTemplate = ({
       buildingTitle: "建物の表示",
       buildingSubTitle: "分割前",
       buildingBlock,
-      dateBlock: buildCommonDateBlock(),
     });
   };
 
@@ -1382,7 +1320,6 @@ export const DocTemplate = ({
       buildingTitle: "建物の表示",
       buildingSubTitle: "合体前",
       buildingBlock,
-      dateBlock: buildCommonDateBlock(),
     });
   };
 
@@ -1457,13 +1394,7 @@ export const DocTemplate = ({
                 </div>
               </MI>
 
-              <MI id="statement-date">
-                <div style={{ textAlign: "left", fontSize: "11pt", margin: "0 0 6mm 0" }}>
-                  {formatTodayDateBlock()}
-                </div>
-              </MI>
-
-              <MI id="statement-signers">
+              <MI id="statement-signers" style={{ paddingLeft: 0 }}>
                 <div style={{ fontSize: "11pt" }}>
                   <div style={{ display: "flex", flexDirection: "column", gap: "2mm", paddingRight: "calc(1em + 26.6mm)" }}>
                     {(statementPeople || []).map((p, i) => (
@@ -1505,9 +1436,6 @@ export const DocTemplate = ({
       ? sellerCandidates.filter(p => new Set(sellerIds).has(p.id))
       : sellerCandidates;
 
-    const currentYearReiwa = String(new Date().getFullYear() - 2018);
-    const w = getWarekiNow();
-
     const buyerText = displayBuyers.map(p => `${p.address || "　"}　${p.name || "　"}様`).join("、");
 
     return (
@@ -1529,12 +1457,6 @@ export const DocTemplate = ({
                       ))}
                     </>
                   ) : <div>　</div>}
-                </div>
-              </MI>
-
-              <MI id="sale-date">
-                <div style={{ textAlign: 'left', fontSize: '12pt', marginBottom: '6mm' }}>
-                  <p>{toFullWidthDigits(`${w.era}${currentYearReiwa}年　　月　　日`)}</p>
                 </div>
               </MI>
 
