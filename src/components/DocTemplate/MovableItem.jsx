@@ -35,9 +35,8 @@ export const MovableItem = ({
     ? { transform: `translate(${offset.x}px, ${offset.y}px)` }
     : {};
 
-  const selectionStyle = !isPrint && isSelected
-    ? { outline: '2px solid #3b82f6', outlineOffset: '2px', borderRadius: '2px' }
-    : {};
+  // Selection styling is done via CSS attribute selector [data-movable-selected]
+  // so it survives innerHTML copies in EditableDocBody.
 
   const hoverStyle = !isPrint
     ? { cursor: 'pointer' }
@@ -46,12 +45,12 @@ export const MovableItem = ({
   return (
     <div
       data-movable-item={itemId}
+      {...(!isPrint && isSelected ? { 'data-movable-selected': '' } : {})}
       onClick={handleClick}
       style={{
         position: 'relative',
         pointerEvents: 'auto',
         ...transformStyle,
-        ...selectionStyle,
         ...hoverStyle,
         ...style,
       }}

@@ -19,6 +19,7 @@ export const Docs = ({ sites, setSites, contractors, scriveners }) => {
   const [showPrintPanel, setShowPrintPanel] = useState(false);
   const [selectedItems, setSelectedItems] = useState(new Set());
   const selectedItemsRef = useRef(new Set());
+  const docContainerRef = useRef(null);
 
   const orderedDocs = useMemo(() => siteData ? getOrderedDocs(siteData.applications || {}) : [], [siteData?.applications]);
 
@@ -240,6 +241,57 @@ export const Docs = ({ sites, setSites, contractors, scriveners }) => {
     setSelectedItems(new Set());
     selectedItemsRef.current = new Set();
   }, [activeInstanceKey]);
+
+  // Delegated click handler for MovableItem selection (contentEditable intercepts normal onClick)
+  useEffect(() => {
+    if (step !== 3) return;
+    const container = docContainerRef.current;
+    if (!container) return;
+    const handler = (e) => {
+      let el = e.target;
+      let itemId = null;
+      while (el && el !== container) {
+        if (el.dataset && el.dataset.movableItem) {
+          itemId = el.dataset.movableItem;
+          break;
+        }
+        el = el.parentElement;
+      }
+      if (itemId) {
+        const addToSelection = e.ctrlKey || e.metaKey || e.shiftKey;
+        onItemSelect(itemId, addToSelection);
+        // Blur contentEditable so arrow keys work for movement
+        if (document.activeElement && document.activeElement.contentEditable === 'true') {
+          document.activeElement.blur();
+        }
+      }
+    };
+    container.addEventListener('click', handler);
+    return () => container.removeEventListener('click', handler);
+  }, [step, onItemSelect]);
+
+  // Sync selection visual state to DOM directly (bypasses contentEditable innerHTML copy issue).
+  // Uses requestAnimationFrame to run after EditableDocBody's useLayoutEffect copies innerHTML.
+  useEffect(() => {
+    const applySelection = () => {
+      const container = docContainerRef.current;
+      if (!container) return;
+      container.querySelectorAll('[data-movable-item]').forEach(el => {
+        const id = el.dataset.movableItem;
+        if (selectedItems.has(id)) {
+          el.style.outline = '2px solid #3b82f6';
+          el.style.outlineOffset = '2px';
+          el.style.borderRadius = '2px';
+        } else {
+          el.style.outline = '';
+          el.style.outlineOffset = '';
+          el.style.borderRadius = '';
+        }
+      });
+    };
+    const raf = requestAnimationFrame(applySelection);
+    return () => cancelAnimationFrame(raf);
+  });
 
   // Arrow key handler for moving selected items
   useEffect(() => {
@@ -1594,7 +1646,7 @@ ${styles}
             <div className="flex-1 flex flex-col items-center overflow-y-auto custom-scrollbar bg-slate-200 shadow-inner rounded-xl">
               {activeInstance ? (
                 <div className="p-10">
-                  <div className="document-container w-[210mm] h-[297mm] bg-white shadow-2xl font-serif leading-relaxed text-slate-900 border border-slate-100 relative">
+                  <div ref={docContainerRef} className="document-container w-[210mm] h-[297mm] bg-white shadow-2xl font-serif leading-relaxed text-slate-900 border border-slate-100 relative">
                     <DocTemplate name={activeInstance.name} siteData={siteData} instanceIndex={activeInstance.index}
                        instanceKey={activeInstanceKey}
                       pick={activePick} onPickChange={(p) => handlePickChange(activeInstanceKey, p)} onStampPosChange={handleStampPosChange} onSignerStampPosChange={handleSignerStampPosChange} isPrint={false} scriveners={scriveners}
