@@ -1,6 +1,6 @@
 import { APP_STATE_STORAGE_KEY } from './constants.js';
 
-const WINDOW_NAME_STATE_PREFIX = "building_app_state_v1::";
+const WINDOW_NAME_STATE_PREFIX = "ishitomo_building_app_state_v1::";
 
 export const isLocalStorageAvailable = () => {
   try {

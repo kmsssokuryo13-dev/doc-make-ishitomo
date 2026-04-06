@@ -1,9 +1,9 @@
 export const PDFJS_CDN = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
 export const PDFJS_WORKER_CDN = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
-export const CONTRACTORS_STORAGE_KEY = "building_app_contractors_v1";
-export const SITES_STORAGE_KEY = "building_app_sites_v1";
-export const APP_STATE_STORAGE_KEY = "building_app_state_v1";
+export const CONTRACTORS_STORAGE_KEY = "ishitomo_building_app_contractors_v1";
+export const SITES_STORAGE_KEY = "ishitomo_building_app_sites_v1";
+export const APP_STATE_STORAGE_KEY = "ishitomo_building_app_state_v1";
 
 export const DEFAULT_DELEGATION_TEXT = "私は上記の者を代理人と定め、下記に記載の登記を管轄法務局へ申請の全権及び登記識別情報の暗号化、復号化並びに登記識別情報通知書代理受領の件、原本還付請求並びに受領の件、申請の補正又は取下に関する件、復代理人選任の件を委任する。";
 
