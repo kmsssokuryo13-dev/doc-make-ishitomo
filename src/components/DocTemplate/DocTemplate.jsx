@@ -752,13 +752,13 @@ export const DocTemplate = ({
               onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
             >
               <MI id="delegation-work">
-                <div style={{ fontSize: '11pt', marginTop: '86mm', marginBottom: '3mm', fontWeight: 'bold' }}>
+                <div style={{ fontSize: '11pt', marginTop: '86mm', marginBottom: '3mm', fontWeight: 'bold', paddingLeft: '1em' }}>
                   {workText}
                 </div>
               </MI>
 
               <MI id="delegation-building">
-                <div style={{ marginTop: '12mm' }}>
+                <div style={{ marginTop: '12mm', paddingLeft: '1em' }}>
                   {buildingSubTitle && <div style={{ fontSize: '11pt', margin: '2mm 0 0 0', fontWeight: 'bold' }}>{buildingSubTitle}</div>}
                   <div style={{ fontSize: '11pt', marginBottom: '5mm' }}>
                     {buildingBlock}
@@ -768,7 +768,7 @@ export const DocTemplate = ({
 
 
               <MI id="delegation-signers">
-                <div style={{ fontSize: '11pt' }}>
+                <div style={{ fontSize: '11pt', paddingLeft: '1em' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0mm', paddingRight: 'calc(1em + 27.5mm)' }}>
                     {signers.map((p, i) => (
                       <div key={p.id || i} style={{ display: 'flex', alignItems: 'center', minHeight: '27.5mm' }}>{formatApplicantShareOnly(p)}</div>
@@ -1489,7 +1489,7 @@ export const DocTemplate = ({
               onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
             >
               <MI id="sale-building">
-                <div style={{ fontSize: '11pt', marginTop: '39mm', marginBottom: '4mm' }}>
+                <div style={{ fontSize: '11pt', marginTop: 'calc(39mm + 1.5em)', marginBottom: '4mm' }}>
                   {saleBuilding ? (
                     <>
                       {(pick.showMain ?? true) && renderMainValuesInline(saleBuilding, { showHouseNum: false })}
