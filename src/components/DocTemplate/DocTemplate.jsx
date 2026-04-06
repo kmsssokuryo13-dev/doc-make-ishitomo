@@ -311,11 +311,6 @@ export const DocTemplate = ({
                 </div>
               </MI>
 
-              <MI id="completion-title-date">
-                <div style={{ textAlign: 'left', fontSize: '12pt', marginBottom: '10mm' }}>
-                  <p>令和{toFullWidthDigits(currentYearReiwa)}年　　月　　日</p>
-                </div>
-              </MI>
             </EditableDocBody>
           </div>
         </div>
@@ -434,11 +429,6 @@ export const DocTemplate = ({
                 </div>
               </MI>
 
-              <MI id="completion-change-date">
-                <div style={{ textAlign: 'left', fontSize: '12pt', marginBottom: '10mm' }}>
-                  <p>令和{toFullWidthDigits(currentYearReiwa)}年　　月　　日</p>
-                </div>
-              </MI>
             </EditableDocBody>
           </div>
         </div>
@@ -512,11 +502,6 @@ export const DocTemplate = ({
             </div>
           </MI>
 
-          <MI id="loss-cert-date">
-            <div style={{ textAlign: 'left', fontSize: '12pt', marginBottom: '10mm' }}>
-              <p>{formatTodayDateBlock()}</p>
-            </div>
-          </MI>
         </EditableDocBody>
         </div>
       </div>
@@ -636,11 +621,6 @@ export const DocTemplate = ({
             </div>
           </MI>
 
-          <MI id="loss-change-date">
-            <div style={{ textAlign: 'left', fontSize: '12pt', marginBottom: '10mm' }}>
-              <p>{formatTodayDateBlock()}</p>
-            </div>
-          </MI>
         </EditableDocBody>
         </div>
       </div>
@@ -690,7 +670,6 @@ export const DocTemplate = ({
           <MI id="ntr-header">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', fontSize: '12pt', marginBottom: '2mm' }}>
               <div>{getMayorTitle()}　殿</div>
-              <div>{formatTodayDateBlock()}</div>
             </div>
           </MI>
 
@@ -787,11 +766,6 @@ export const DocTemplate = ({
                 </div>
               </MI>
 
-              <MI id="delegation-date">
-                <div style={{ fontSize: '11pt', marginBottom: '5mm' }}>
-                  {dateBlock ?? formatTodayDateBlock()}
-                </div>
-              </MI>
 
               <MI id="delegation-signers">
                 <div style={{ fontSize: '11pt' }}>
@@ -1457,11 +1431,6 @@ export const DocTemplate = ({
                 </div>
               </MI>
 
-              <MI id="statement-date">
-                <div style={{ textAlign: "left", fontSize: "11pt", margin: "0 0 6mm 0" }}>
-                  {formatTodayDateBlock()}
-                </div>
-              </MI>
 
               <MI id="statement-signers">
                 <div style={{ fontSize: "11pt" }}>
@@ -1532,11 +1501,6 @@ export const DocTemplate = ({
                 </div>
               </MI>
 
-              <MI id="sale-date">
-                <div style={{ textAlign: 'left', fontSize: '12pt', marginBottom: '6mm' }}>
-                  <p>{toFullWidthDigits(`${w.era}${currentYearReiwa}年　　月　　日`)}</p>
-                </div>
-              </MI>
 
               <MI id="sale-sellers">
                 <div style={{ fontSize: '11pt', marginTop: '6mm' }}>
