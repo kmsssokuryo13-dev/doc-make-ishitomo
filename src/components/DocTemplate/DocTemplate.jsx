@@ -1506,15 +1506,15 @@ export const DocTemplate = ({
                 <div style={{ fontSize: '11pt', marginTop: '6mm' }}>
                   {displaySellers.length > 0 ? displaySellers.map((p, i) => (
                     <div key={p.id} style={{ display: 'flex', alignItems: 'center', minHeight: '26.6mm', marginTop: i > 0 ? '4mm' : '0' }}>
-                      <div style={{ fontSize: '12pt', paddingRight: 'calc(1em + 26.6mm)' }}>
-                        <p style={{ margin: '0 0 2mm 0' }}>{p.address || "　"}</p>
+                      <div style={{ fontSize: '11pt', paddingRight: 'calc(1em + 26.6mm)' }}>
+                        <p style={{ margin: '0' }}>{p.address || "　"}</p>
                         <p style={{ margin: '0' }}>{p.name || "　"}</p>
                       </div>
                     </div>
                   )) : (
                     <div style={{ display: 'flex', alignItems: 'center', minHeight: '26.6mm' }}>
-                      <div style={{ fontSize: '12pt', paddingRight: 'calc(1em + 26.6mm)' }}>
-                        <p style={{ margin: '0 0 2mm 0' }}>　</p>
+                      <div style={{ fontSize: '11pt', paddingRight: 'calc(1em + 26.6mm)' }}>
+                        <p style={{ margin: '0' }}>　</p>
                         <p style={{ margin: '0' }}>　</p>
                       </div>
                     </div>
