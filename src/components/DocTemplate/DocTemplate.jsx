@@ -319,13 +319,13 @@ export const DocTemplate = ({
               </MI>
 
               <MI id="completion-title-cause">
-                <div style={{ fontSize: '11pt', marginTop: 'calc(1.5em * 10 - 114px)', paddingLeft: 'calc(1em + 1px)' }}>
+                <div style={{ fontSize: '11pt', marginTop: 'calc(1.5em * 10 - 113px)', paddingLeft: 'calc(1em + 1px)' }}>
                   <p style={{ margin: '0' }}>{formatWareki(targetProp.registrationDate, targetProp.additionalUnknownDate)}　{targetProp.registrationCause || "　"}</p>
                 </div>
               </MI>
 
               <MI id="completion-title-applicants">
-                <div style={{ fontSize: '11pt', marginTop: 'calc(1.5em * 9 - 187px)', paddingLeft: 'calc(1em + 1px)' }}>
+                <div style={{ fontSize: '11pt', marginTop: 'calc(1.5em * 9 - 174px)', paddingLeft: 'calc(1em + 1px)' }}>
                   {(applicants || []).map(p => (
                     <p key={p.id} style={{ margin: '0 0 2mm 0' }}>
                       {formatApplicantLine(p)}
