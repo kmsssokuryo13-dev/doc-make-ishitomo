@@ -615,7 +615,7 @@ const parseCoOwnersFromRightsText = (text) => {
 const parseOwnerFromRightsText = (text) => {
   const owners = [];
 
-  const addrNameMatch = text.match(/(.+?(?:[番地号丁目]+[０-９\d]*)+)\s+(.+)/);
+  const addrNameMatch = text.match(/(.+(?:[番地号丁目]+[０-９\d]*))\s+(.+)/);
   let address = "";
   let name = "";
 
