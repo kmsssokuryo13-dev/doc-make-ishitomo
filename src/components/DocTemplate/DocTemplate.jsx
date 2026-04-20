@@ -306,7 +306,7 @@ export const DocTemplate = ({
               </MI>
 
               <MI id="completion-title-floor">
-                <div style={{ fontSize: '11pt', marginTop: 'calc(1.5em * 6 - 40px)', paddingLeft: '1em' }}>
+                <div style={{ fontSize: '11pt', marginTop: 'calc(1.5em * 6 - 70px)', paddingLeft: '1em' }}>
                   {(pick.showMain ?? true) && (() => {
                     const areas = floorLineInline(targetProp.floorAreas);
                     return areas ? <div>{getMainSymbolPrefix(targetProp)}{areas}</div> : null;
@@ -319,13 +319,13 @@ export const DocTemplate = ({
               </MI>
 
               <MI id="completion-title-cause">
-                <div style={{ fontSize: '11pt', marginTop: 'calc(1.5em * 10 - 100px)', paddingLeft: '1em' }}>
+                <div style={{ fontSize: '11pt', marginTop: 'calc(1.5em * 10 - 120px)', paddingLeft: '1em' }}>
                   <p style={{ margin: '0' }}>{formatWareki(targetProp.registrationDate, targetProp.additionalUnknownDate)}　{targetProp.registrationCause || "　"}</p>
                 </div>
               </MI>
 
               <MI id="completion-title-applicants">
-                <div style={{ fontSize: '11pt', marginTop: 'calc(1.5em * 9 - 260px)', paddingLeft: '1em' }}>
+                <div style={{ fontSize: '11pt', marginTop: 'calc(1.5em * 9 - 235px)', paddingLeft: '1em' }}>
                   {(applicants || []).map(p => (
                     <p key={p.id} style={{ margin: '0 0 2mm 0' }}>
                       {formatApplicantLine(p)}
