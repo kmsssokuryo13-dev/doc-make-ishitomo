@@ -325,7 +325,7 @@ export const DocTemplate = ({
               </MI>
 
               <MI id="completion-title-applicants">
-                <div style={{ fontSize: '11pt', marginTop: 'calc(1.5em * 9 - 310px)', paddingLeft: 'calc(1em + 1px)' }}>
+                <div style={{ fontSize: '11pt', marginTop: 'calc(1.5em * 9 - 210px)', paddingLeft: 'calc(1em + 1px)' }}>
                   {(applicants || []).map(p => (
                     <p key={p.id} style={{ margin: '0 0 2mm 0' }}>
                       {formatApplicantLine(p)}
