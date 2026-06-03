@@ -493,6 +493,9 @@ ${styles}
   const isNtrCert = activeInstance && activeInstance.name === "非登載証明書";
   if (isNtrCert) return null;
 
+  const isSaleCert = activeInstance && activeInstance.name === "売渡証明書";
+  if (isSaleCert) return null;
+
   const isLandCategoryChange = activeInstance && activeInstance.name === "委任状（地目変更）";
   const isLoss = activeInstance && activeInstance.name === "委任状（滅失）";
 
@@ -1296,16 +1299,6 @@ ${styles}
                       handlePickChange(activeInstanceKey, { applicantPersonIds: Array.from(base) });
                     };
 
-                    const sellerCandidates = (siteData?.people || []).filter(p => (p.roles || []).includes("その他"));
-                    const curSellerIds = Array.isArray(activePick.saleSellerPersonIds) ? activePick.saleSellerPersonIds : [];
-                    const defaultSellerIds = new Set(sellerCandidates.map(p => p.id));
-                    const effectiveSellerSet = curSellerIds.length > 0 ? new Set(curSellerIds) : defaultSellerIds;
-                    const toggleSeller = (id) => {
-                      const base = new Set(curSellerIds.length > 0 ? curSellerIds : Array.from(defaultSellerIds));
-                      if (base.has(id)) base.delete(id); else base.add(id);
-                      handlePickChange(activeInstanceKey, { saleSellerPersonIds: Array.from(base) });
-                    };
-
                     return (
                     <div className="border-t pt-4">
                       <div className="space-y-3">
@@ -1365,28 +1358,6 @@ ${styles}
                                   }`}
                                 >
                                   <input type="checkbox" className="w-3 h-3 rounded" checked={effectiveApplSet.has(p.id)} onChange={() => toggleApplicant(p.id)} />
-                                  <span className="truncate">{p.name || "(氏名未入力)"}</span>
-                                </label>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        <div>
-                          <label className="block text-[10px] font-bold text-gray-500 mb-2">売渡人を選択（役割「その他」）</label>
-                          {sellerCandidates.length === 0 ? (
-                            <p className="text-[10px] text-slate-400">「その他」の役割の人が登録されていません。</p>
-                          ) : (
-                            <div className="grid grid-cols-1 gap-1">
-                              {sellerCandidates.map((p) => (
-                                <label
-                                  key={p.id}
-                                  className={`flex items-center gap-2 p-1 rounded border text-[9px] cursor-pointer ${
-                                    effectiveSellerSet.has(p.id)
-                                      ? "bg-blue-50 border-blue-200 text-blue-700"
-                                      : "bg-white border-slate-200 text-slate-500"
-                                  }`}
-                                >
-                                  <input type="checkbox" className="w-3 h-3 rounded" checked={effectiveSellerSet.has(p.id)} onChange={() => toggleSeller(p.id)} />
                                   <span className="truncate">{p.name || "(氏名未入力)"}</span>
                                 </label>
                               ))}

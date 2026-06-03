@@ -324,15 +324,15 @@ export const DocTemplate = ({
                 </div>
               </MI>
 
-              <MI id="completion-title-applicants">
-                <div style={{ fontSize: '11pt', marginTop: 'calc(1.5em * 9 - 174px)', paddingLeft: 'calc(1em + 1px)' }}>
-                  {(applicants || []).map(p => (
-                    <p key={p.id} style={{ margin: '0 0 2mm 0' }}>
+              <div style={{ fontSize: '11pt', marginTop: 'calc(1.5em * 9 - 174px)', paddingLeft: 'calc(1em + 1px)' }}>
+                {(applicants || []).map(p => (
+                  <MI key={p.id} id={`completion-title-applicant-${p.id}`}>
+                    <p style={{ margin: '0 0 2mm 0' }}>
                       {formatApplicantLine(p)}
                     </p>
-                  ))}
-                </div>
-              </MI>
+                  </MI>
+                ))}
+              </div>
 
             </EditableDocBody>
           </div>
@@ -442,15 +442,15 @@ export const DocTemplate = ({
                 </div>
               </MI>
 
-              <MI id="completion-change-applicants">
-                <div style={{ fontSize: '11pt', marginBottom: '8mm' }}>
-                  {(applicants || []).map(p => (
-                    <div key={p.id} style={{ margin: '0 0 2mm 0' }}>
+              <div style={{ fontSize: '11pt', marginBottom: '8mm' }}>
+                {(applicants || []).map(p => (
+                  <MI key={p.id} id={`completion-change-applicant-${p.id}`}>
+                    <div style={{ margin: '0 0 2mm 0' }}>
                       {renderOwnerWithDecedent(p, formatApplicantLine)}
                     </div>
-                  ))}
-                </div>
-              </MI>
+                  </MI>
+                ))}
+              </div>
 
             </EditableDocBody>
           </div>
@@ -515,15 +515,15 @@ export const DocTemplate = ({
             </div>
           </MI>
 
-          <MI id="loss-cert-owners">
-            <div style={{ fontSize: '11pt', marginBottom: '8mm' }}>
-              {displayOwners.length > 0 ? displayOwners.map(p => (
-                <div key={p.id} style={{ margin: '0 0 2mm 0' }}>
+          <div style={{ fontSize: '11pt', marginBottom: '8mm' }}>
+            {displayOwners.length > 0 ? displayOwners.map(p => (
+              <MI key={p.id} id={`loss-cert-owner-${p.id}`}>
+                <div style={{ margin: '0 0 2mm 0' }}>
                   {renderOwnerWithDecedent(p, (pp) => `${pp.address || "　"}　${pp.name || "　"}`)}
                 </div>
-              )) : <div>　</div>}
-            </div>
-          </MI>
+              </MI>
+            )) : <div>　</div>}
+          </div>
 
         </EditableDocBody>
         </div>
@@ -634,15 +634,15 @@ export const DocTemplate = ({
             </div>
           </MI>
 
-          <MI id="loss-change-owners">
-            <div style={{ fontSize: '11pt', marginBottom: '8mm' }}>
-              {displayOwners.length > 0 ? displayOwners.map(p => (
-                <div key={p.id} style={{ margin: '0 0 2mm 0' }}>
+          <div style={{ fontSize: '11pt', marginBottom: '8mm' }}>
+            {displayOwners.length > 0 ? displayOwners.map(p => (
+              <MI key={p.id} id={`loss-change-owner-${p.id}`}>
+                <div style={{ margin: '0 0 2mm 0' }}>
                   {renderOwnerWithDecedent(p, (pp) => `${pp.address || "　"}　${pp.name || "　"}`)}
                 </div>
-              )) : <div>　</div>}
-            </div>
-          </MI>
+              </MI>
+            )) : <div>　</div>}
+          </div>
 
         </EditableDocBody>
         </div>
@@ -731,15 +731,15 @@ export const DocTemplate = ({
             </div>
           </MI>
 
-          <MI id="ntr-owners">
-            <div style={{ fontSize: '11pt', marginBottom: '8mm', paddingLeft: '4mm' }}>
-              {ntrDisplayOwners.length > 0 ? ntrDisplayOwners.map(p => (
-                <div key={p.id} style={{ margin: '0 0 2mm 0' }}>
+          <div style={{ fontSize: '11pt', marginBottom: '8mm', paddingLeft: '4mm' }}>
+            {ntrDisplayOwners.length > 0 ? ntrDisplayOwners.map(p => (
+              <MI key={p.id} id={`ntr-owner-${p.id}`}>
+                <div style={{ margin: '0 0 2mm 0' }}>
                   {renderOwnerWithDecedent(p, (pp) => `${pp.address || "　"}　${pp.name || "　"}`)}
                 </div>
-              )) : <div>　</div>}
-            </div>
-          </MI>
+              </MI>
+            )) : <div>　</div>}
+          </div>
         </EditableDocBody>
         </div>
       </div>
@@ -790,15 +790,15 @@ export const DocTemplate = ({
               </MI>
 
 
-              <MI id="delegation-signers">
-                <div style={{ fontSize: '11pt', paddingLeft: '1em' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0mm', paddingRight: 'calc(1em + 27.5mm)' }}>
-                    {signers.map((p, i) => (
-                      <div key={p.id || i} style={{ display: 'flex', alignItems: 'center', minHeight: '27.5mm' }}>{formatApplicantShareOnly(p)}</div>
-                    ))}
-                  </div>
+              <div style={{ fontSize: '11pt', paddingLeft: '1em' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0mm', paddingRight: 'calc(1em + 27.5mm)' }}>
+                  {signers.map((p, i) => (
+                    <MI key={p.id || i} id={`delegation-signer-${p.id || i}`}>
+                      <div style={{ display: 'flex', alignItems: 'center', minHeight: '27.5mm' }}>{formatApplicantShareOnly(p)}</div>
+                    </MI>
+                  ))}
                 </div>
-              </MI>
+              </div>
             </EditableDocBody>
           </div>
         </div>
@@ -1455,15 +1455,15 @@ export const DocTemplate = ({
               </MI>
 
 
-              <MI id="statement-signers">
-                <div style={{ fontSize: "11pt" }}>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "2mm", paddingRight: "calc(1em + 26.6mm)" }}>
-                    {(statementPeople || []).map((p, i) => (
-                      <div key={p.id || i} style={{ display: "flex", alignItems: "center", minHeight: "26.6mm" }}>{formatStatementShareOnly(p)}</div>
-                    ))}
-                  </div>
+              <div style={{ fontSize: "11pt" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "2mm", paddingRight: "calc(1em + 26.6mm)" }}>
+                  {(statementPeople || []).map((p, i) => (
+                    <MI key={p.id || i} id={`statement-signer-${p.id || i}`}>
+                      <div style={{ display: "flex", alignItems: "center", minHeight: "26.6mm" }}>{formatStatementShareOnly(p)}</div>
+                    </MI>
+                  ))}
                 </div>
-              </MI>
+              </div>
             </EditableDocBody>
           </div>
       </div>
@@ -1491,17 +1491,6 @@ export const DocTemplate = ({
       : allApplicants;
     const displayBuyers = saleBuyers.length > 0 ? saleBuyers : allApplicants;
 
-    const sellerCandidates = (siteData?.people || []).filter(p => (p.roles || []).includes("その他"));
-    const sellerIds = Array.isArray(pick?.saleSellerPersonIds) ? pick.saleSellerPersonIds : [];
-    const displaySellers = sellerIds.length > 0
-      ? sellerCandidates.filter(p => new Set(sellerIds).has(p.id))
-      : sellerCandidates;
-
-    const currentYearReiwa = String(new Date().getFullYear() - 2018);
-    const w = getWarekiNow();
-
-    const buyerText = displayBuyers.map(p => `${p.address || "　"}　${p.name || "　"}様`).join("、");
-
     return (
       <div className="doc-content flex flex-col h-full text-black font-serif relative doc-no-bold" style={{ fontFamily: '"MS Mincho","ＭＳ 明朝",serif', ...printOffsetStyle }}>
         <div style={{ position: 'absolute', inset: 0, padding: DOC_PAGE_PADDING, boxSizing: 'border-box', pointerEvents: 'none' }}>
@@ -1525,25 +1514,25 @@ export const DocTemplate = ({
               </MI>
 
 
-              <MI id="sale-sellers">
-                <div style={{ fontSize: '11pt', marginTop: '6mm' }}>
-                  {displaySellers.length > 0 ? displaySellers.map((p, i) => (
-                    <div key={p.id} style={{ display: 'flex', alignItems: 'center', minHeight: '26.6mm', marginTop: i > 0 ? '4mm' : '0' }}>
+              <div style={{ fontSize: '11pt', marginTop: '6mm' }}>
+                {displayBuyers.length > 0 ? displayBuyers.map((p, i) => (
+                  <MI key={p.id} id={`sale-buyer-${p.id}`}>
+                    <div style={{ display: 'flex', alignItems: 'center', minHeight: '26.6mm', marginTop: i > 0 ? '4mm' : '0' }}>
                       <div style={{ fontSize: '11pt', paddingRight: 'calc(1em + 26.6mm)' }}>
                         <p style={{ margin: '0' }}>{p.address || "　"}</p>
                         <p style={{ margin: '0' }}>{p.name || "　"}</p>
                       </div>
                     </div>
-                  )) : (
-                    <div style={{ display: 'flex', alignItems: 'center', minHeight: '26.6mm' }}>
-                      <div style={{ fontSize: '11pt', paddingRight: 'calc(1em + 26.6mm)' }}>
-                        <p style={{ margin: '0' }}>　</p>
-                        <p style={{ margin: '0' }}>　</p>
-                      </div>
+                  </MI>
+                )) : (
+                  <div style={{ display: 'flex', alignItems: 'center', minHeight: '26.6mm' }}>
+                    <div style={{ fontSize: '11pt', paddingRight: 'calc(1em + 26.6mm)' }}>
+                      <p style={{ margin: '0' }}>　</p>
+                      <p style={{ margin: '0' }}>　</p>
                     </div>
-                  )}
-                </div>
-              </MI>
+                  </div>
+                )}
+              </div>
             </EditableDocBody>
           </div>
         </div>
