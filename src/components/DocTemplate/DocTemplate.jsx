@@ -1520,7 +1520,7 @@ export const DocTemplate = ({
                     <div style={{ display: 'flex', alignItems: 'center', minHeight: '26.6mm', marginTop: i > 0 ? '4mm' : '0' }}>
                       <div style={{ fontSize: '11pt', paddingRight: 'calc(1em + 26.6mm)' }}>
                         <p style={{ margin: '0' }}>{p.address || "　"}</p>
-                        <p style={{ margin: '0' }}>{p.name || "　"}</p>
+                        <p style={{ margin: '0' }}>{displayBuyers.length > 1 ? `${formatShare(p?.share)}　${p.name || "　"}` : (p.name || "　")}</p>
                       </div>
                     </div>
                   </MI>
