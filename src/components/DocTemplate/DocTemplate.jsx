@@ -760,6 +760,7 @@ export const DocTemplate = ({
     dateBlock,
     topRightBlock,
     signerList,
+    signerMarginTop = '0px',
   }) => {
     const signers = signerList || applicants || [];
     return (
@@ -790,7 +791,7 @@ export const DocTemplate = ({
               </MI>
 
 
-              <div style={{ fontSize: '11pt', paddingLeft: '1em' }}>
+              <div style={{ fontSize: '11pt', paddingLeft: '1em', marginTop: signerMarginTop }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0mm', paddingRight: 'calc(1em + 27.5mm)' }}>
                   {signers.map((p, i) => (
                     <MI key={p.id || i} id={`delegation-signer-${p.id || i}`}>
@@ -831,7 +832,7 @@ export const DocTemplate = ({
       </p>
     );
 
-    return renderDelegationCommon({ docNoBold: true, workText, buildingBlock, dateBlock });
+    return renderDelegationCommon({ docNoBold: true, workText, buildingBlock, dateBlock, signerMarginTop: '175px' });
   };
 
   const buildCommonBuildingBlock = () => {
