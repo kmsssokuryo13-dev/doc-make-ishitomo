@@ -1788,7 +1788,7 @@ const Docs = ({ sites, setSites, contractors, scriveners }) => {
     const el = document.getElementById("print-area");
     if (!el || !printInstances.length) { alert("印刷対象がありません。"); return; }
     const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]')).map(node => node.outerHTML).join("\n");
-    const extraPrintCss = `<style>@page { size: A4; margin: 0; } html, body { margin: 0; padding: 0; background: white; } .break-before-page { break-before: page; page-break-before: always; } .doc-no-bold, .doc-no-bold * { font-weight: normal !important; }</style>`;
+    const extraPrintCss = `<style>@page { size: A4; margin: 0; } html, body { margin: 0; padding: 0; background: white; width: 210mm; } .break-before-page { break-before: page; page-break-before: always; } .doc-no-bold, .doc-no-bold * { font-weight: normal !important; }</style>`;
     const html = `<!doctype html><html><head><meta charset="utf-8" /><title>印刷</title>${styles}${extraPrintCss}</head><body>${el.innerHTML}</body></html>`;
     const w = window.open("", "_blank");
     if (!w) return;
@@ -1830,7 +1830,7 @@ const Docs = ({ sites, setSites, contractors, scriveners }) => {
 
       <div className="hidden text-black"><div id="print-area">
         {printInstances.map((inst, i) => (
-          <div key={inst.key} className={`w-[210mm] h-[297mm] bg-white font-serif leading-relaxed ${i > 0 ? "break-before-page" : ""} relative`}>
+          <div key={inst.key} className={`w-[210mm] h-[297mm] bg-white font-serif leading-relaxed ${i > 0 ? "break-before-page" : ""} relative overflow-hidden`}>
             <DocTemplate name={inst.name} siteData={siteData} instanceIndex={inst.index} instanceKey={inst.key} pick={siteData?.docPick?.[inst.key] || DEFAULT_PICK} isPrint={true} scriveners={scriveners} />
           </div>
         ))}
@@ -2223,7 +2223,7 @@ const Docs = ({ sites, setSites, contractors, scriveners }) => {
             <div className="flex-1 flex flex-col items-center overflow-y-auto custom-scrollbar bg-slate-200 shadow-inner rounded-xl text-black text-black text-black text-black text-black text-black text-black">
               {activeInstance ? (
                 <div className="p-10 text-black text-black text-black text-black text-black text-black text-black text-black text-black text-black">
-                  <div className="document-container w-[210mm] h-[297mm] bg-white shadow-2xl font-serif leading-relaxed text-slate-900 border border-slate-100 relative text-black text-black text-black text-black text-black text-black text-black text-black text-black text-black text-black text-black text-black text-black text-black text-black text-black text-black text-black text-black text-black text-black text-black text-black">
+                  <div className="document-container w-[210mm] h-[297mm] bg-white shadow-2xl font-serif leading-relaxed text-slate-900 border border-slate-100 relative overflow-hidden text-black text-black text-black text-black text-black text-black text-black text-black text-black text-black text-black text-black text-black text-black text-black text-black text-black text-black text-black text-black text-black text-black text-black text-black">
                     <DocTemplate name={activeInstance.name} siteData={siteData} instanceIndex={activeInstance.index}
                        instanceKey={activeInstanceKey} 
                       pick={activePick} onPickChange={(p) => handlePickChange(activeInstanceKey, p)} onStampPosChange={handleStampPosChange} onSignerStampPosChange={handleSignerStampPosChange} isPrint={false} scriveners={scriveners} />

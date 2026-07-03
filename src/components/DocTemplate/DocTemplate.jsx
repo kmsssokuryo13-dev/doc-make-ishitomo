@@ -1413,6 +1413,20 @@ export const DocTemplate = ({
       return "";
     };
 
+    // 確認済証情報のデフォルト初期位置（右190px、下40px）
+    const statementDefaultOffsets = { 'statement-confirm': { x: 190, y: 40 } };
+    const mergedOffsets = {};
+    Object.entries(itemOffsets).forEach(([k, v]) => { mergedOffsets[k] = { ...v }; });
+    Object.entries(statementDefaultOffsets).forEach(([k, def]) => {
+      const user = mergedOffsets[k] || { x: 0, y: 0 };
+      mergedOffsets[k] = { x: def.x + user.x, y: def.y + user.y };
+    });
+    const SMI = ({ id, children, style }) => (
+      <MovableItem itemId={id} offsets={mergedOffsets} selected={selectedItems} onSelect={onItemSelect} isPrint={isPrint} style={style}>
+        {children}
+      </MovableItem>
+    );
+
     const buildingBlock = targetProp ? (
       <div style={{ marginBottom: "6mm" }}>
         {(pick.showMain ?? true) && renderMainValuesInline(targetProp, { showHouseNum: false })}
@@ -1435,11 +1449,11 @@ export const DocTemplate = ({
               customHtml={pick.customText}
               onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
             >
-              <MI id="statement-building">
+              <SMI id="statement-building">
                 <div style={{ fontSize: "11pt", marginTop: buildingMarginTop, marginBottom: "8mm" }}>{buildingBlock}</div>
-              </MI>
+              </SMI>
 
-              <MI id="statement-confirm">
+              <SMI id="statement-confirm">
                 <div style={{ fontSize: "11pt", marginBottom: "8mm" }}>
                   <div>{targetProp?.confirmationCert ? formatConfirmationCertLine(targetProp.confirmationCert) : "　"}</div>
                   {(() => {
@@ -1453,15 +1467,15 @@ export const DocTemplate = ({
                       : <div>{"　"}</div>;
                   })()}
                 </div>
-              </MI>
+              </SMI>
 
 
               <div style={{ fontSize: "11pt" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "2mm", paddingRight: "calc(1em + 26.6mm)" }}>
                   {(statementPeople || []).map((p, i) => (
-                    <MI key={p.id || i} id={`statement-signer-${p.id || i}`}>
+                    <SMI key={p.id || i} id={`statement-signer-${p.id || i}`}>
                       <div style={{ display: "flex", alignItems: "center", minHeight: "26.6mm" }}>{formatStatementShareOnly(p)}</div>
-                    </MI>
+                    </SMI>
                   ))}
                 </div>
               </div>

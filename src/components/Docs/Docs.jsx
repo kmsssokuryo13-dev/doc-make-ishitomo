@@ -350,7 +350,7 @@ ${styles}
   [contenteditable] { outline: none !important; }
   @media print {
     @page { size: A4 portrait; margin: 0; }
-    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; width: 210mm; }
   }
   @media screen {
     body > div > div { margin: 0 auto 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
@@ -419,7 +419,7 @@ ${styles}
 
       <div style={{ position: 'fixed', left: '-9999px', top: 0, zIndex: -1 }}><div id="print-area">
         {printInstances.map((inst, i) => (
-          <div key={inst.key} data-doc-name={inst.name} className={`w-[210mm] h-[297mm] bg-white font-serif leading-relaxed ${i > 0 ? "break-before-page" : ""} relative`}>
+          <div key={inst.key} data-doc-name={inst.name} className={`w-[210mm] h-[297mm] bg-white font-serif leading-relaxed ${i > 0 ? "break-before-page" : ""} relative overflow-hidden`}>
             <DocTemplate name={inst.name} siteData={siteData} instanceIndex={inst.index} instanceKey={inst.key} pick={siteData?.docPick?.[inst.key] || DEFAULT_PICK} isPrint={true} />
           </div>
         ))}
@@ -1547,7 +1547,7 @@ ${styles}
             <div className="flex-1 flex flex-col items-center overflow-y-auto custom-scrollbar bg-slate-200 shadow-inner rounded-xl">
               {activeInstance ? (
                 <div className="p-10">
-                  <div ref={docContainerRef} onClick={handleContainerClick} className="document-container w-[210mm] h-[297mm] bg-white shadow-2xl font-serif leading-relaxed text-slate-900 border border-slate-100 relative">
+                  <div ref={docContainerRef} onClick={handleContainerClick} className="document-container w-[210mm] h-[297mm] bg-white shadow-2xl font-serif leading-relaxed text-slate-900 border border-slate-100 relative overflow-hidden">
                     <DocTemplate name={activeInstance.name} siteData={siteData} instanceIndex={activeInstance.index}
                        instanceKey={activeInstanceKey}
                       pick={activePick} onPickChange={(p) => handlePickChange(activeInstanceKey, p)} onStampPosChange={handleStampPosChange} onSignerStampPosChange={handleSignerStampPosChange} isPrint={false}
