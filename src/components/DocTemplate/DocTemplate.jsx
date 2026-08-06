@@ -285,6 +285,7 @@ export const DocTemplate = ({
             <EditableDocBody
               editable={!isPrint && textEditMode}
               customHtml={pick.customText}
+              itemOffsets={itemOffsets}
               onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
             >
               <MI id="completion-title-address">
@@ -406,6 +407,7 @@ export const DocTemplate = ({
             <EditableDocBody
               editable={!isPrint && textEditMode}
               customHtml={pick.customText}
+              itemOffsets={itemOffsets}
               onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
             >
               <MI id="completion-change-before">
@@ -487,6 +489,7 @@ export const DocTemplate = ({
         <EditableDocBody
           editable={!isPrint && textEditMode}
           customHtml={pick.customText}
+              itemOffsets={itemOffsets}
           onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
         >
           <MI id="loss-cert-building">
@@ -602,6 +605,7 @@ export const DocTemplate = ({
         <EditableDocBody
           editable={!isPrint && textEditMode}
           customHtml={pick.customText}
+              itemOffsets={itemOffsets}
           onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
         >
           <MI id="loss-change-building">
@@ -689,6 +693,7 @@ export const DocTemplate = ({
         <EditableDocBody
           editable={!isPrint && textEditMode}
           customHtml={pick.customText}
+              itemOffsets={itemOffsets}
           onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
         >
           <MI id="ntr-header">
@@ -774,6 +779,7 @@ export const DocTemplate = ({
             <EditableDocBody
               editable={!isPrint && textEditMode}
               customHtml={pick.customText}
+              itemOffsets={itemOffsets}
               onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
             >
               <MI id="delegation-work">
@@ -1448,6 +1454,7 @@ export const DocTemplate = ({
             <EditableDocBody
               editable={!isPrint && textEditMode}
               customHtml={pick.customText}
+              itemOffsets={itemOffsets}
               onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
             >
               <SMI id="statement-building">
@@ -1514,6 +1521,7 @@ export const DocTemplate = ({
             <EditableDocBody
               editable={!isPrint && textEditMode}
               customHtml={pick.customText}
+              itemOffsets={itemOffsets}
               onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
             >
               <MI id="sale-building">
