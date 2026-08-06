@@ -18,6 +18,7 @@ export const MovableItem = ({
   selected,
   onSelect,
   isPrint,
+  selectable = true,
   children,
   style,
 }) => {
@@ -25,7 +26,7 @@ export const MovableItem = ({
   const isSelected = selected?.has(itemId) || false;
 
   const handleClick = (e) => {
-    if (isPrint) return;
+    if (isPrint || !selectable) return;
     e.stopPropagation();
     const addToSelection = e.ctrlKey || e.metaKey || e.shiftKey;
     onSelect?.(itemId, addToSelection);
@@ -38,14 +39,14 @@ export const MovableItem = ({
   // Selection styling is done via CSS attribute selector [data-movable-selected]
   // so it survives innerHTML copies in EditableDocBody.
 
-  const hoverStyle = !isPrint
-    ? { cursor: 'pointer' }
-    : {};
+  const hoverStyle = isPrint
+    ? {}
+    : (selectable ? { cursor: 'pointer' } : { cursor: 'text' });
 
   return (
     <div
       data-movable-item={itemId}
-      {...(!isPrint && isSelected ? { 'data-movable-selected': '' } : {})}
+      {...(!isPrint && selectable && isSelected ? { 'data-movable-selected': '' } : {})}
       onClick={handleClick}
       style={{
         position: 'relative',

@@ -18,6 +18,7 @@ export const Docs = ({ sites, setSites, contractors }) => {
   const [isPrinting, setIsPrinting] = useState(false);
   const [showPrintPanel, setShowPrintPanel] = useState(false);
   const [selectedItems, setSelectedItems] = useState(new Set());
+  const [textEditMode, setTextEditMode] = useState(false);
   const selectedItemsRef = useRef(new Set());
   const docContainerRef = useRef(null);
 
@@ -245,6 +246,7 @@ export const Docs = ({ sites, setSites, contractors }) => {
   // Delegated click handler for MovableItem selection (contentEditable intercepts normal onClick).
   // Uses React onClick on the container div (see JSX below) instead of addEventListener for reliability.
   const handleContainerClick = useCallback((e) => {
+    if (textEditMode) return;
     const container = docContainerRef.current;
     if (!container) return;
     let el = e.target;
@@ -264,7 +266,7 @@ export const Docs = ({ sites, setSites, contractors }) => {
         document.activeElement.blur();
       }
     }
-  }, [onItemSelect]);
+  }, [onItemSelect, textEditMode]);
 
   // Sync selection visual state to DOM directly (bypasses contentEditable innerHTML copy issue).
   // Uses requestAnimationFrame to run after EditableDocBody's useLayoutEffect copies innerHTML.
@@ -291,7 +293,7 @@ export const Docs = ({ sites, setSites, contractors }) => {
 
   // Arrow key handler for moving selected items
   useEffect(() => {
-    if (step !== 3) return;
+    if (step !== 3 || textEditMode) return;
     const handler = (e) => {
       const sel = selectedItemsRef.current;
       if (!sel || sel.size === 0) return;
@@ -301,6 +303,7 @@ export const Docs = ({ sites, setSites, contractors }) => {
       // Don't intercept if user is typing in an input/textarea
       const tag = document.activeElement?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if (document.activeElement?.isContentEditable) return;
       e.preventDefault();
       const [dx, dy] = delta;
       const moveStep = e.shiftKey ? 5 : 1;
@@ -320,7 +323,15 @@ export const Docs = ({ sites, setSites, contractors }) => {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [step, siteId, activeInstanceKey, setSites]);
+  }, [step, siteId, activeInstanceKey, setSites, textEditMode]);
+
+  // Entering text edit mode clears item selection so clicks place the caret instead.
+  useEffect(() => {
+    if (textEditMode) {
+      setSelectedItems(new Set());
+      selectedItemsRef.current = new Set();
+    }
+  }, [textEditMode]);
 
   const printInstances = useMemo(() => allInstances.filter(inst => (siteData?.docPick?.[inst.key]?.printOn ?? true)), [allInstances, siteData?.docPick]);
 
@@ -1487,6 +1498,25 @@ ${styles}
                   })()}
 
                   <div className="border-t pt-4 text-black">
+                    <label className="block text-[10px] font-bold text-gray-500 mb-2">編集モード</label>
+                    <div className="flex gap-1 mb-2">
+                      <button onClick={() => setTextEditMode(false)}
+                        className={`flex-1 text-[9px] py-1.5 rounded font-bold ${!textEditMode ? 'bg-blue-600 text-white' : 'bg-slate-100 hover:bg-slate-200'}`}>
+                        位置調整
+                      </button>
+                      <button onClick={() => setTextEditMode(true)}
+                        className={`flex-1 text-[9px] py-1.5 rounded font-bold ${textEditMode ? 'bg-blue-600 text-white' : 'bg-slate-100 hover:bg-slate-200'}`}>
+                        文言編集
+                      </button>
+                    </div>
+                    <p className="text-[8px] text-gray-400 mb-2 leading-relaxed">
+                      {textEditMode
+                        ? 'プレビューの文字をクリックして直接編集できます。編集内容は書類ごとに保存されます。'
+                        : '文言を書き換えるには「文言編集」に切り替えてください。'}
+                    </p>
+                  </div>
+
+                  <div className={`border-t pt-4 text-black ${textEditMode ? 'opacity-40 pointer-events-none' : ''}`}>
                     <label className="block text-[10px] font-bold text-gray-500 mb-2">項目別 位置調整</label>
                     <p className="text-[8px] text-gray-400 mb-2 leading-relaxed">
                       プレビュー上の項目をクリックで選択（Ctrl/Cmd+クリックで複数選択可）。<br/>
@@ -1551,7 +1581,7 @@ ${styles}
                     <DocTemplate name={activeInstance.name} siteData={siteData} instanceIndex={activeInstance.index}
                        instanceKey={activeInstanceKey}
                       pick={activePick} onPickChange={(p) => handlePickChange(activeInstanceKey, p)} onStampPosChange={handleStampPosChange} onSignerStampPosChange={handleSignerStampPosChange} isPrint={false}
-                      selectedItems={selectedItems} onItemSelect={onItemSelect} />
+                      selectedItems={selectedItems} onItemSelect={onItemSelect} textEditMode={textEditMode} />
                   </div>
                 </div>
               ) : <div className="flex items-center text-slate-400 italic h-full font-bold">書類を選択してください</div>}
