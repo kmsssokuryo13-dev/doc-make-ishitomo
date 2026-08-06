@@ -12,7 +12,7 @@ import { MovableItem } from './MovableItem.jsx';
 export const DocTemplate = ({
   name, siteData, instanceKey, pick, onPickChange,
   onStampPosChange, onSignerStampPosChange, isPrint, instanceIndex,
-  selectedItems, onItemSelect,
+  selectedItems, onItemSelect, textEditMode = false,
 }) => {
   const itemOffsets = pick?.itemOffsets || {};
 
@@ -24,6 +24,7 @@ export const DocTemplate = ({
       selected={selectedItems}
       onSelect={onItemSelect}
       isPrint={isPrint}
+      selectable={!textEditMode}
       style={style}
     >
       {children}
@@ -282,7 +283,7 @@ export const DocTemplate = ({
         <div style={{ position: 'absolute', inset: 0, padding: DOC_PAGE_PADDING, boxSizing: 'border-box', pointerEvents: 'none' }}>
           <div style={{ position: 'relative' }}>
             <EditableDocBody
-              editable={!isPrint}
+              editable={!isPrint && textEditMode}
               customHtml={pick.customText}
               onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
             >
@@ -403,7 +404,7 @@ export const DocTemplate = ({
         <div style={{ position: 'absolute', inset: 0, padding: DOC_PAGE_PADDING, boxSizing: 'border-box', pointerEvents: 'none' }}>
           <div style={{ position: 'relative' }}>
             <EditableDocBody
-              editable={!isPrint}
+              editable={!isPrint && textEditMode}
               customHtml={pick.customText}
               onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
             >
@@ -484,7 +485,7 @@ export const DocTemplate = ({
       <div className="doc-content flex flex-col h-full text-black font-serif relative doc-no-bold" style={{ fontFamily: '"MS Mincho","ＭＳ 明朝",serif', ...printOffsetStyle }}>
         <div style={{ position: 'absolute', inset: 0, padding: DOC_PAGE_PADDING, boxSizing: 'border-box', pointerEvents: 'none' }}>
         <EditableDocBody
-          editable={!isPrint}
+          editable={!isPrint && textEditMode}
           customHtml={pick.customText}
           onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
         >
@@ -599,7 +600,7 @@ export const DocTemplate = ({
       <div className="doc-content flex flex-col h-full text-black font-serif relative doc-no-bold" style={{ fontFamily: '"MS Mincho","ＭＳ 明朝",serif', ...printOffsetStyle }}>
         <div style={{ position: 'absolute', inset: 0, padding: DOC_PAGE_PADDING, boxSizing: 'border-box', pointerEvents: 'none' }}>
         <EditableDocBody
-          editable={!isPrint}
+          editable={!isPrint && textEditMode}
           customHtml={pick.customText}
           onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
         >
@@ -686,7 +687,7 @@ export const DocTemplate = ({
       <div className="doc-content flex flex-col h-full text-black font-serif relative doc-no-bold" style={{ fontFamily: '"MS Mincho","ＭＳ 明朝",serif', ...printOffsetStyle }}>
         <div style={{ position: 'absolute', inset: 0, padding: DOC_PAGE_PADDING, boxSizing: 'border-box', pointerEvents: 'none' }}>
         <EditableDocBody
-          editable={!isPrint}
+          editable={!isPrint && textEditMode}
           customHtml={pick.customText}
           onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
         >
@@ -771,7 +772,7 @@ export const DocTemplate = ({
         <div style={{ position: 'absolute', inset: 0, padding: DOC_PAGE_PADDING, boxSizing: 'border-box', pointerEvents: 'none' }}>
           <div style={{ position: 'relative' }}>
             <EditableDocBody
-              editable={!isPrint}
+              editable={!isPrint && textEditMode}
               customHtml={pick.customText}
               onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
             >
@@ -1445,7 +1446,7 @@ export const DocTemplate = ({
         <div style={{ position: 'absolute', inset: 0, padding: DOC_PAGE_PADDING, boxSizing: 'border-box', pointerEvents: 'none' }}>
           <div style={{ position: 'relative' }}>
             <EditableDocBody
-              editable={!isPrint}
+              editable={!isPrint && textEditMode}
               customHtml={pick.customText}
               onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
             >
@@ -1511,7 +1512,7 @@ export const DocTemplate = ({
         <div style={{ position: 'absolute', inset: 0, padding: DOC_PAGE_PADDING, boxSizing: 'border-box', pointerEvents: 'none' }}>
           <div style={{ position: 'relative' }}>
             <EditableDocBody
-              editable={!isPrint}
+              editable={!isPrint && textEditMode}
               customHtml={pick.customText}
               onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
             >

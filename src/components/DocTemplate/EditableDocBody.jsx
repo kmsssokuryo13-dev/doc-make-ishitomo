@@ -45,16 +45,20 @@ export const EditableDocBody = ({ editable, customHtml, onCustomHtmlChange, chil
     return () => { if (focusedRef.current) flush(); };
   }, [flush]);
 
-  if (!editable) {
-    if (hasCustom) return <div className="doc-editable" style={{ pointerEvents: 'auto' }} dangerouslySetInnerHTML={{ __html: customHtml }} />;
-    return <div className="doc-editable" style={{ pointerEvents: 'auto' }}>{children}</div>;
-  }
+  useEffect(() => {
+    if (!editable) { focusedRef.current = false; flush(); }
+  }, [editable, flush]);
 
   useLayoutEffect(() => {
     if (editable && !hasCustom && containerRef.current && captureRef.current && !focusedRef.current) {
       containerRef.current.innerHTML = captureRef.current.innerHTML;
     }
   });
+
+  if (!editable) {
+    if (hasCustom) return <div className="doc-editable" style={{ pointerEvents: 'auto' }} dangerouslySetInnerHTML={{ __html: customHtml }} />;
+    return <div className="doc-editable" style={{ pointerEvents: 'auto' }}>{children}</div>;
+  }
 
   if (hasCustom) {
     return (
