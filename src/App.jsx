@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import { APP_STATE_STORAGE_KEY, CONTRACTORS_STORAGE_KEY } from './constants.js';
-import { sanitizeSiteData, sanitizeContractors } from './sanitize.js';
+import { sanitizeSiteData, sanitizeContractors, sanitizeCoreExtras } from './sanitize.js';
 import { ErrorBoundary } from './components/ui/ErrorBoundary.jsx';
 import { Editor } from './components/Editor/Editor.jsx';
 import { Docs } from './components/Docs/Docs.jsx';
@@ -11,6 +11,8 @@ const App = () => {
   const [activeSiteId, setActiveSiteId] = useState(null);
   const [hydrated, setHydrated] = useState(false);
   const [contractors, setContractors] = useState([]);
+  // JSON ルート直下の共通Core情報（石友版UIでは未使用。再エクスポート時に書き戻す）。
+  const [coreExtras, setCoreExtras] = useState({});
   const didInitRef = useRef(false);
 
   useEffect(() => {
@@ -28,6 +30,7 @@ const App = () => {
         const loadedSites = Array.isArray(data?.sites) ? data.sites.map(sanitizeSiteData) : [];
         if (loadedSites.length > 0) {
           setSites(loadedSites);
+          setCoreExtras(sanitizeCoreExtras(data?.coreExtras || {}));
           const nextActive =
             loadedSites.some(s => s.id === data.activeSiteId)
               ? data.activeSiteId
@@ -62,20 +65,20 @@ const App = () => {
     if (!Array.isArray(sites) || sites.length === 0) return;
 
     try {
-      const payload = { activeSiteId, sites };
+      const payload = { activeSiteId, sites, coreExtras };
       localStorage.setItem(APP_STATE_STORAGE_KEY, JSON.stringify(payload));
     } catch (e) {
       console.warn("Failed to persist app state:", e);
     }
-  }, [sites, activeSiteId]);
+  }, [sites, activeSiteId, coreExtras]);
 
   return (
     <ErrorBoundary>
       <HashRouter>
         <Routes>
-          <Route path="/" element={          <Editor sites={sites} setSites={setSites} activeSiteId={activeSiteId} setActiveSiteId={setActiveSiteId} contractors={contractors} setContractors={setContractors} />} />
+          <Route path="/" element={          <Editor sites={sites} setSites={setSites} activeSiteId={activeSiteId} setActiveSiteId={setActiveSiteId} contractors={contractors} setContractors={setContractors} coreExtras={coreExtras} setCoreExtras={setCoreExtras} />} />
                     <Route path="/docs" element={<Docs sites={sites} setSites={setSites} contractors={contractors} />} />
-                    <Route path="*" element={<Editor sites={sites} setSites={setSites} activeSiteId={activeSiteId} setActiveSiteId={setActiveSiteId} contractors={contractors} setContractors={setContractors} />} />
+                    <Route path="*" element={<Editor sites={sites} setSites={setSites} activeSiteId={activeSiteId} setActiveSiteId={setActiveSiteId} contractors={contractors} setContractors={setContractors} coreExtras={coreExtras} setCoreExtras={setCoreExtras} />} />
         </Routes>
       </HashRouter>
     </ErrorBoundary>

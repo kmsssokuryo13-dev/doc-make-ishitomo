@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { createNewSite } from '../../utils.js';
 import { sanitizeSiteData } from '../../sanitize.js';
+import { buildExportPayload, parseImportPayload } from '../../jsonTransfer.js';
 import { extractTextFromPdf, parseRegistrationPdf } from '../../pdfExtract.js';
 import { Modal } from '../ui/Modal.jsx';
 import { TabBtn } from '../ui/TabBtn.jsx';
@@ -16,7 +17,7 @@ import { MasterManagerModal } from './MasterManagerModal.jsx';
 import { PdfAutoFillPanel } from './PdfAutoFillModal.jsx';
 import { PdfViewer } from '../PdfViewer.jsx';
 
-export const Editor = ({ sites, setSites, activeSiteId, setActiveSiteId, contractors, setContractors }) => {
+export const Editor = ({ sites, setSites, activeSiteId, setActiveSiteId, contractors, setContractors, coreExtras, setCoreExtras }) => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('land_reg');
   const [pdfFiles, setPdfFiles] = useState([]);
@@ -123,7 +124,7 @@ export const Editor = ({ sites, setSites, activeSiteId, setActiveSiteId, contrac
   }, [activeSiteId, setSites]);
 
   const exportToJson = () => {
-    const data = { schemaVersion: 6, exportedAt: new Date().toISOString(), app: "document-builder-building", activeSiteId, sites, contractors };
+    const data = buildExportPayload({ activeSiteId, sites, contractors, coreExtras });
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = `survey_docs_${new Date().toISOString().slice(0, 10)}.json`; a.click(); URL.revokeObjectURL(url);
@@ -134,11 +135,11 @@ export const Editor = ({ sites, setSites, activeSiteId, setActiveSiteId, contrac
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
-        const data = JSON.parse(event.target.result);
-        if (!data || !Array.isArray(data.sites)) throw new Error("JSON形式不正");
-        const sanitized = data.sites.map(sanitizeSiteData);
-        setSites(sanitized); setActiveSiteId(sanitized.find(x => x.id === data.activeSiteId) ? data.activeSiteId : sanitized[0].id);
-        if (Array.isArray(data.contractors)) setContractors(data.contractors);
+        const parsed = parseImportPayload(JSON.parse(event.target.result));
+        setSites(parsed.sites);
+        setActiveSiteId(parsed.activeSiteId);
+        if (parsed.contractors) setContractors(parsed.contractors);
+        if (setCoreExtras) setCoreExtras(parsed.coreExtras);
       } catch (err) { alert("読込失敗: " + err.message); }
     };
     reader.readAsText(file);

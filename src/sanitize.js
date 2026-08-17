@@ -5,6 +5,12 @@ import {
   sanitizeConfirmationCert
 } from './utils.js';
 
+// 通常版と共有する連携用フィールド（共通Core）。石友版のUIでは未使用でも、
+// 読み込み→保存→再エクスポートで失わないよう明示的に保持する。
+// 未知フィールドを何でも通す generic pass-through は行わない。
+const stringList = (value) =>
+  Array.isArray(value) ? value.filter(v => typeof v === "string") : [];
+
 export const sanitizeSiteData = (raw = {}) => {
   const sanitizeLand = (l = {}) => ({
     id: l.id || generateId(),
@@ -13,6 +19,7 @@ export const sanitizeSiteData = (raw = {}) => {
     category: l.category || "",
     area: l.area || "",
     owner: l.owner || "",
+    ownerPersonIds: stringList(l.ownerPersonIds),
     categoryChangeEnabled: !!l.categoryChangeEnabled,
     newCategory: l.newCategory ?? "",
     newArea: l.newArea ?? "",
@@ -119,6 +126,9 @@ export const sanitizeSiteData = (raw = {}) => {
       structFloor,
       struct,
       owner: b.owner || "",
+      ownerPersonIds: stringList(b.ownerPersonIds),
+      // 建物の敷地となる土地（land[].id）。石友版では現在生成しないが保持する。
+      siteLandIds: stringList(b.siteLandIds),
       floorAreas,
       hasBasement,
       annexes: Array.isArray(b.annexes) ? b.annexes.map(sanitizeAnnex) : [],
@@ -131,7 +141,9 @@ export const sanitizeSiteData = (raw = {}) => {
       },
       additionalCauses: Array.isArray(b.additionalCauses) ? b.additionalCauses.map(sanitizeCauseEntry) : [],
       additionalUnknownDate: !!b.additionalUnknownDate,
-      confirmationCert: sanitizeConfirmationCert(b.confirmationCert)
+      confirmationCert: sanitizeConfirmationCert(b.confirmationCert),
+      confirmApplicantPersonIds: stringList(b.confirmApplicantPersonIds),
+      confirmApplicantNames: stringList(b.confirmApplicantNames)
     };
   };
 
@@ -157,10 +169,35 @@ export const sanitizeSiteData = (raw = {}) => {
         }))
       : [],
     applications: stableSortKeys({ ...baseApplications, ...(raw.applications || {}) }),
+    registrationApplications: Array.isArray(raw.registrationApplications)
+      ? raw.registrationApplications.map(ra => ({
+          id: ra.id || generateId(),
+          type: ra.type || "",
+          targetBuildingIds: stringList(ra.targetBuildingIds),
+          // 登記申請そのものの対象土地。docPick.targetLandIds（書類へ表示する
+          // 土地の選択）とは別概念であり、相互に流用しない。
+          targetLandIds: stringList(ra.targetLandIds),
+          applicantPersonIds: stringList(ra.applicantPersonIds),
+          documents: stableSortKeys(typeof ra.documents === "object" && ra.documents ? ra.documents : {}),
+        }))
+      : [],
     documents: stableSortKeys(typeof raw.documents === "object" && raw.documents ? raw.documents : {}),
     docPick: stableSortKeys(typeof raw.docPick === "object" && raw.docPick ? raw.docPick : {}),
-    contractorId: raw.contractorId || ""
+    contractorId: raw.contractorId || "",
+    scrivenerId: raw.scrivenerId || ""
   };
+};
+
+// JSON ルート直下の共通Core情報。石友版のUIでは使わないが、読み込んだ値を
+// 再エクスポート時にそのまま書き戻すために保持する。存在しないキーは持たない。
+export const sanitizeCoreExtras = (raw = {}) => {
+  const extras = {};
+  if (Array.isArray(raw.scriveners)) extras.scriveners = raw.scriveners;
+  if (typeof raw.variant === "string") extras.variant = raw.variant;
+  if (typeof raw.variantVersion === "string" || typeof raw.variantVersion === "number") {
+    extras.variantVersion = raw.variantVersion;
+  }
+  return extras;
 };
 
 export const sanitizeContractors = (list) => {
