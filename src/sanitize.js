@@ -4,6 +4,9 @@ import {
   parseStructureToFloors, parseAnnexStructureToFloors, parseStructParts,
   sanitizeConfirmationCert
 } from './utils.js';
+import {
+  normalizeRegistrationApplication, migrateLegacyLandTargets
+} from './registrationApplications.js';
 
 // 通常版と共有する連携用フィールド（共通Core）。石友版のUIでは未使用でも、
 // 読み込み→保存→再エクスポートで失わないよう明示的に保持する。
@@ -152,11 +155,14 @@ export const sanitizeSiteData = (raw = {}) => {
     return acc;
   }, {});
 
+  const land = Array.isArray(raw.land) ? raw.land.map(sanitizeLand) : [];
+  const landIds = new Set(land.map(l => l.id));
+
   return {
     id: raw.id || generateId(),
     name: raw.name || "新規現場",
     address: raw.address || "",
-    land: Array.isArray(raw.land) ? raw.land.map(sanitizeLand) : [],
+    land,
     buildings: Array.isArray(raw.buildings) ? raw.buildings.map(sanitizeBuilding) : [],
     proposedBuildings: Array.isArray(raw.proposedBuildings) ? raw.proposedBuildings.map(sanitizeBuilding) : [],
     people: Array.isArray(raw.people)
@@ -170,16 +176,10 @@ export const sanitizeSiteData = (raw = {}) => {
       : [],
     applications: stableSortKeys({ ...baseApplications, ...(raw.applications || {}) }),
     registrationApplications: Array.isArray(raw.registrationApplications)
-      ? raw.registrationApplications.map(ra => ({
-          id: ra.id || generateId(),
-          type: ra.type || "",
-          targetBuildingIds: stringList(ra.targetBuildingIds),
-          // 登記申請そのものの対象土地。docPick.targetLandIds（書類へ表示する
-          // 土地の選択）とは別概念であり、相互に流用しない。
-          targetLandIds: stringList(ra.targetLandIds),
-          applicantPersonIds: stringList(ra.applicantPersonIds),
-          documents: stableSortKeys(typeof ra.documents === "object" && ra.documents ? ra.documents : {}),
-        }))
+      ? migrateLegacyLandTargets(
+          raw.registrationApplications.map(normalizeRegistrationApplication),
+          landIds
+        )
       : [],
     documents: stableSortKeys(typeof raw.documents === "object" && raw.documents ? raw.documents : {}),
     docPick: stableSortKeys(typeof raw.docPick === "object" && raw.docPick ? raw.docPick : {}),
@@ -193,7 +193,7 @@ export const sanitizeSiteData = (raw = {}) => {
 export const sanitizeCoreExtras = (raw = {}) => {
   const extras = {};
   if (Array.isArray(raw.scriveners)) extras.scriveners = raw.scriveners;
-  if (typeof raw.variant === "string") extras.variant = raw.variant;
+  // variant は出力元アプリ自身が決めるため extras では持たない。
   if (typeof raw.variantVersion === "string" || typeof raw.variantVersion === "number") {
     extras.variantVersion = raw.variantVersion;
   }

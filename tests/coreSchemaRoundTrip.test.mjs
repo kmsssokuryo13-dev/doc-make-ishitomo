@@ -6,6 +6,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { sanitizeSiteData, sanitizeCoreExtras } from '../src/sanitize.js';
+import { syncRegistrationApplications } from '../src/registrationApplications.js';
+import { APPLICATION_TYPES } from '../src/constants.js';
 import {
   buildExportPayload,
   parseImportPayload,
@@ -130,6 +132,22 @@ test('A: 従来の石友版JSON（新フィールドなし）が読み込め、�
   assert.equal(out.app, EXPORT_APP);
 });
 
+test('A2: schemaVersion 6 / 7 をどちらも警告なしで受理し、未知の新しい version は警告する', () => {
+  for (const version of [6, 7]) {
+    const payload = standardPayload();
+    payload.schemaVersion = version;
+    const parsed = parseImportPayload(payload);
+    assert.deepEqual(parsed.warnings, []);
+    assert.equal(parsed.schemaVersion, version);
+  }
+  const future = standardPayload();
+  future.schemaVersion = 8;
+  const parsed = parseImportPayload(future);
+  assert.equal(parsed.warnings.length, 1);
+  assert.match(parsed.warnings[0], /schemaVersion 8/);
+  assert.equal(parsed.sites.length, 1);
+});
+
 test('B: registrationApplications が round-trip で消えない', () => {
   const out = roundTrip(standardPayload());
   const ras = firstSite(out).registrationApplications;
@@ -201,21 +219,22 @@ test('G: 定義していない未知フィールドは pass-through しない', 
   assert.equal('unknownRaField' in site.registrationApplications[0], false);
 });
 
-test('H: schemaVersion は 6 のまま。variant / variantVersion / scriveners は書き戻す', () => {
+test('H: schemaVersion 7 / variant ishitomo を出力し、variantVersion / scriveners は書き戻す', () => {
   const payload = standardPayload();
   payload.variant = 'standard';
   payload.variantVersion = '1';
 
   const out = roundTrip(payload);
-  assert.equal(out.schemaVersion, 6);
-  assert.equal(out.variant, 'standard');
+  assert.equal(out.schemaVersion, 7);
+  // 読み込んだ variant ではなく、出力元アプリの variant を出す。
+  assert.equal(out.variant, 'ishitomo');
   assert.equal(out.variantVersion, '1');
   assert.deepEqual(out.scriveners, payload.scriveners);
 });
 
-test('H2: variant が無い JSON では variant キー自体を出力しない', () => {
+test('H2: variant が無い JSON を読んでも variant: ishitomo を出力する', () => {
   const out = roundTrip(standardPayload());
-  assert.equal('variant' in out, false);
+  assert.equal(out.variant, 'ishitomo');
   assert.equal('variantVersion' in out, false);
 });
 
@@ -237,4 +256,57 @@ test('J: 再度読み込んでも安定する（2回 round-trip で同一）', (
   const once = roundTrip(standardPayload());
   const twice = roundTrip(once);
   assert.deepEqual(twice.sites, once.sites);
+});
+
+test('K: 旧形式（土地IDが targetBuildingIds）は安全な場合だけ targetLandIds へ正規化する', () => {
+  const payload = standardPayload();
+  payload.sites[0].registrationApplications[1] = {
+    id: 'ra-2', type: '土地地目変更登記',
+    targetBuildingIds: ['land-3'], targetLandIds: [],
+    applicantPersonIds: ['p2'], documents: { '委任状（地目変更）': 1 },
+  };
+  const ra = firstSite(roundTrip(payload)).registrationApplications[1];
+  assert.deepEqual(ra.targetLandIds, ['land-3']);
+  assert.deepEqual(ra.targetBuildingIds, []);
+
+  // land[] に存在しない ID は土地と見なさず、旧値をそのまま保持する。
+  const ambiguous = standardPayload();
+  ambiguous.sites[0].registrationApplications[1] = {
+    id: 'ra-2', type: '土地地目変更登記',
+    targetBuildingIds: ['building-A'], targetLandIds: [],
+    applicantPersonIds: [], documents: {},
+  };
+  const kept = firstSite(roundTrip(ambiguous)).registrationApplications[1];
+  assert.deepEqual(kept.targetLandIds, []);
+  assert.deepEqual(kept.targetBuildingIds, ['building-A']);
+});
+
+test('L: applications 件数の増減で既存 RA の情報を失わない', () => {
+  const site = sanitizeSiteData(standardPayload().sites[0]);
+
+  // 1 → 2 件：既存 RA を完全に保持し、新 RA だけ追加する。
+  const grown = syncRegistrationApplications(
+    { ...site.applications, 建物表題登記: 2 }, site.registrationApplications, APPLICATION_TYPES
+  );
+  assert.equal(grown.changed, true);
+  assert.equal(grown.next.length, 3);
+  assert.equal(grown.next[0], site.registrationApplications[0]);
+  assert.deepEqual(grown.next[2], {
+    id: grown.next[2].id, type: '建物表題登記',
+    targetBuildingIds: [], targetLandIds: [], applicantPersonIds: [], documents: {},
+  });
+
+  // 2 → 1 件：削除分だけ除き、残る RA の対象ID・申請人・documents を保持する。
+  const shrunk = syncRegistrationApplications(site.applications, grown.next, APPLICATION_TYPES);
+  assert.equal(shrunk.changed, true);
+  assert.deepEqual(shrunk.next.map(ra => ra.id), ['ra-1', 'ra-2']);
+  assert.deepEqual(shrunk.next[0].targetBuildingIds, ['building-A']);
+  assert.deepEqual(shrunk.next[0].applicantPersonIds, ['p1']);
+  assert.deepEqual(shrunk.next[0].documents, { '委任状（表題）': 1 });
+  assert.deepEqual(shrunk.next[1].targetLandIds, ['land-3']);
+
+  // 件数不変：オブジェクトをそのまま保つ。
+  const same = syncRegistrationApplications(site.applications, site.registrationApplications, APPLICATION_TYPES);
+  assert.equal(same.changed, false);
+  assert.deepEqual(same.next, site.registrationApplications);
 });

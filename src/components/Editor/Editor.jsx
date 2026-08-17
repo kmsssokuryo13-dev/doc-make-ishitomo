@@ -140,6 +140,7 @@ export const Editor = ({ sites, setSites, activeSiteId, setActiveSiteId, contrac
         setActiveSiteId(parsed.activeSiteId);
         if (parsed.contractors) setContractors(parsed.contractors);
         if (setCoreExtras) setCoreExtras(parsed.coreExtras);
+        if (parsed.warnings.length > 0) alert(parsed.warnings.join("\n"));
       } catch (err) { alert("読込失敗: " + err.message); }
     };
     reader.readAsText(file);
