@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Printer, RotateCcw as ResetIcon, Loader2 } from 'lucide-react';
 import { naturalSortList, stableSortKeys, getOrderedDocs, formatWareki } from '../../utils.js';
 import { APPLICATION_TYPES } from '../../constants.js';
+import { syncRegistrationApplications } from '../../registrationApplications.js';
 import { StepBadge } from '../ui/StepBadge.jsx';
 import { CountRow } from '../ui/CountRow.jsx';
 import { DocRow } from '../ui/DocRow.jsx';
@@ -174,6 +175,20 @@ export const Docs = ({ sites, setSites, contractors }) => {
       return changedAny ? next : prev;
     });
   }, [siteId, siteData?.proposedBuildings, siteData?.applications, siteData?.documents, siteData?.docPick]);
+
+  // applications{} の件数へ registrationApplications[] を追随させる。
+  // 石友版に RA 編集UIは無いが、schemaVersion 7 を出力する以上両者の整合を保つ。
+  useEffect(() => {
+    if (!siteId || !siteData) return;
+    const { next, changed } = syncRegistrationApplications(
+      siteData.applications || {},
+      siteData.registrationApplications || [],
+      APPLICATION_TYPES
+    );
+    if (changed) {
+      setSites(prev => prev.map(s => s.id === siteId ? { ...s, registrationApplications: next } : s));
+    }
+  }, [siteId, siteData?.applications]);
 
   useEffect(() => {
     if (!siteId || !siteData) return;

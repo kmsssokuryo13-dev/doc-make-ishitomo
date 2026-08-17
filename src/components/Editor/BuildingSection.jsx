@@ -154,6 +154,8 @@ export const BuildingSection = ({ type, site, update }) => {
       const newBldg = createNewBuilding();
       newBldg.address = address;
       newBldg.houseNum = houseNum;
+      // 所在文字列だけでなく、選んだ土地とのID関連も保持する。
+      newBldg.siteLandIds = [lands[0].id];
       update({ [dataKey]: [...buildings, newBldg] });
       return;
     }
@@ -166,6 +168,7 @@ export const BuildingSection = ({ type, site, update }) => {
     const newBldg = createNewBuilding();
     newBldg.address = address;
     newBldg.houseNum = houseNum;
+    newBldg.siteLandIds = [...selections];
     update({ [dataKey]: [...buildings, newBldg] });
     setIsLandSelectOpen(false);
   }, [landMap, buildings, dataKey, update]);
