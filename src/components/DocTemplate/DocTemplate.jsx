@@ -169,27 +169,18 @@ export const DocTemplate = ({
     );
   };
 
-  const inlineMI = { display: 'inline-block' };
-
-  // 滅失証明書: 所在・家屋番号・種類・構造・床面積を個別に位置調整できるよう分割
-  const renderLossBuildingFields = (prefix, b) => {
-    const kindText = getMainSymbolPrefix(b) + (b.kind || "　");
-    const structText = stripAllWS(b.struct) ? b.struct : "";
-    const areaText = floorLineInline(b.floorAreas);
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
-        <MI id={`${prefix}-address-${b.id}`}><div>{b.address || "　"}</div></MI>
-        {b.houseNum ? (
-          <MI id={`${prefix}-housenum-${b.id}`}><div style={{ fontWeight: 'bold' }}>家屋番号　{b.houseNum}</div></MI>
-        ) : null}
-        <div>
-          <MI id={`${prefix}-kind-${b.id}`} style={inlineMI}>{kindText}</MI>
-          {structText ? <>{"　"}<MI id={`${prefix}-struct-${b.id}`} style={inlineMI}>{structText}</MI></> : null}
-          {areaText ? <>{"　"}<MI id={`${prefix}-area-${b.id}`} style={inlineMI}>{areaText}</MI></> : null}
-        </div>
-      </div>
-    );
-  };
+  // 滅失証明書: 所在・家屋番号・種類構造床面積を個別に位置調整できるよう分割
+  const renderLossBuildingFields = (prefix, b) => (
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <MI id={`${prefix}-address-${b.id}`}><div>{b.address || "　"}</div></MI>
+      {b.houseNum ? (
+        <MI id={`${prefix}-housenum-${b.id}`}><div style={{ fontWeight: 'bold' }}>家屋番号　{b.houseNum}</div></MI>
+      ) : null}
+      <MI id={`${prefix}-kindstruct-${b.id}`}>
+        <div>{buildKindStructAreaLine(getMainSymbolPrefix(b), b.kind, b.struct, b.floorAreas)}</div>
+      </MI>
+    </div>
+  );
 
   const isAnnexEmpty = (a) => {
     if (!a) return true;
