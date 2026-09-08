@@ -1,20 +1,35 @@
 import React, { useMemo } from 'react';
 import {
-  toFullWidthDigits, naturalSortList, formatWareki, getSelectedScrivener,
+  toFullWidthDigits, naturalSortList, formatWareki,
   formatConfirmationCertLine, formatShare
 } from '../../utils.js';
 import {
-  DOC_PAGE_PADDING, DEFAULT_DELEGATION_TEXT, DEFAULT_DELEGATION_TEXT_SAVE,
-  DEFAULT_DELEGATION_TEXT_ADDRESS_CHANGE
+  DOC_PAGE_PADDING, DEFAULT_DELEGATION_TEXT
 } from '../../constants.js';
 import { EditableDocBody } from './EditableDocBody.jsx';
-import { DraggableStamp } from './DraggableStamp.jsx';
-import { DraggableSignerStamp } from './DraggableSignerStamp.jsx';
+import { MovableItem } from './MovableItem.jsx';
 
 export const DocTemplate = ({
   name, siteData, instanceKey, pick, onPickChange,
-  onStampPosChange, onSignerStampPosChange, isPrint, instanceIndex, scriveners
+  onStampPosChange, onSignerStampPosChange, isPrint, instanceIndex,
+  selectedItems, onItemSelect, textEditMode = false,
 }) => {
+  const itemOffsets = pick?.itemOffsets || {};
+
+  // Helper to wrap content blocks with MovableItem
+  const MI = ({ id, children, style }) => (
+    <MovableItem
+      itemId={id}
+      offsets={itemOffsets}
+      selected={selectedItems}
+      onSelect={onItemSelect}
+      isPrint={isPrint}
+      selectable={!textEditMode}
+      style={style}
+    >
+      {children}
+    </MovableItem>
+  );
   const allApplicants = useMemo(
     () => (siteData.people || []).filter(p => (p.roles || []).includes("申請人")),
     [siteData.people]
@@ -43,26 +58,6 @@ export const DocTemplate = ({
     return filtered.length ? filtered : statementCandidates;
   }, [statementCandidates, pick?.statementPersonIds]);
 
-  const linkedScrivener = useMemo(
-    () => getSelectedScrivener(siteData, scriveners),
-    [siteData?.scrivenerId, scriveners]
-  );
-
-  const getLinkedScrivenerLines = () => {
-    if (!linkedScrivener) return ["　", "　"];
-    return [linkedScrivener.address || "　", linkedScrivener.name || "　"];
-  };
-
-  const useLinkedScrivenerOnTopRight =
-    name === "委任状（保存）" || name === "委任状（住所変更）";
-
-  const [linkedScrivenerAddrLine, linkedScrivenerNameLine] = getLinkedScrivenerLines();
-
-  if (name === "委任状（保存）") {
-    const p = pick || {};
-    pick = { ...p, showAnnex: false };
-  }
-
   // 印字位置オフセット
   const printOffsetX = pick?.printOffsetX ?? 0;
   const printOffsetY = pick?.printOffsetY ?? 0;
@@ -70,11 +65,6 @@ export const DocTemplate = ({
     ? { transform: `translate(${printOffsetX}px, ${printOffsetY}px)` }
     : {};
 
-  const getSignerPos = (idx) => {
-    const list = Array.isArray(pick?.signerStampPositions) ? pick.signerStampPositions : [];
-    const hit = list.find(p => p?.i === idx);
-    return { dx: hit?.dx || 0, dy: hit?.dy || 0 };
-  };
 
   const sortedProp = useMemo(() => naturalSortList(siteData.proposedBuildings || [], 'houseNum'), [siteData.proposedBuildings]);
 
@@ -115,7 +105,6 @@ export const DocTemplate = ({
   };
 
   const floorLine = (floorAreas) => {
-    if (name === "委任状（保存）") return "";
     const arr = Array.isArray(floorAreas) ? floorAreas : [];
     const filtered = arr.filter(fa => stripAllWS(fa.area));
     if (filtered.length === 0) return "";
@@ -156,10 +145,6 @@ export const DocTemplate = ({
   };
 
   const buildKindStructAreaLine = (symbolPrefix, kind, struct, floorAreas) => {
-    if (name === "委任状（保存）") {
-      const sym = symbolPrefix || "";
-      return sym ? `${sym}` : "　";
-    }
     const k = kind || "　";
     const areas = floorLineInline(floorAreas);
     const parts = [symbolPrefix + k];
@@ -176,13 +161,26 @@ export const DocTemplate = ({
         <div>{b.address || "　"}</div>
         {showHouseNum && b.houseNum ? (
           <div style={{ fontWeight: 'bold' }}>
-            {name === "委任状（保存）" ? `家屋番号　${b.houseNum}　の建物` : b.houseNum}
+            {b.houseNum}
           </div>
         ) : null}
         <div>{line}</div>
       </div>
     );
   };
+
+  // 滅失証明書: 所在・家屋番号・種類構造床面積を個別に位置調整できるよう分割
+  const renderLossBuildingFields = (prefix, b) => (
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <MI id={`${prefix}-address-${b.id}`}><div>{b.address || "　"}</div></MI>
+      {b.houseNum ? (
+        <MI id={`${prefix}-housenum-${b.id}`}><div style={{ fontWeight: 'bold' }}>家屋番号　{b.houseNum}</div></MI>
+      ) : null}
+      <MI id={`${prefix}-kindstruct-${b.id}`}>
+        <div>{buildKindStructAreaLine(getMainSymbolPrefix(b), b.kind, b.struct, b.floorAreas)}</div>
+      </MI>
+    </div>
+  );
 
   const isAnnexEmpty = (a) => {
     if (!a) return true;
@@ -211,12 +209,10 @@ export const DocTemplate = ({
         <div>{b.address || "　"}</div>
         {showHouseNum && b.houseNum ? (
           <div style={{ fontWeight: 'bold' }}>
-            {name === "委任状（保存）" ? `家屋番号 ${b.houseNum}の建物` : b.houseNum}
+            {b.houseNum}
           </div>
         ) : null}
-        {name === "委任状（保存）" ? null : (
-          <div>{(b.kind || "　")}{b.struct ? `　${b.struct}` : ""}</div>
-        )}
+        <div>{(b.kind || "　")}{b.struct ? `　${b.struct}` : ""}</div>
         <div>{floorLine(b.floorAreas)}</div>
       </div>
     );
@@ -227,9 +223,7 @@ export const DocTemplate = ({
     return (
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         <div style={{ fontWeight: 'bold' }}>{a.symbol || "無符号"}</div>
-        {name === "委任状（保存）" ? null : (
-          <div>{(a.kind || "　")}{a.struct ? `　${a.struct}` : ""}</div>
-        )}
+        <div>{(a.kind || "　")}{a.struct ? `　${a.struct}` : ""}</div>
         <div>{floorLine(a.floorAreas)}</div>
       </div>
     );
@@ -299,42 +293,62 @@ export const DocTemplate = ({
 
     return (
       <div className="doc-content flex flex-col h-full text-black font-serif relative doc-no-bold" style={{ fontFamily: '"MS Mincho","ＭＳ 明朝",serif', ...printOffsetStyle }}>
-        <div className="stamp-area">
-          {(() => {
-            const pos = (pick.stampPositions || []).find(p => p.i === 0) || { dx: 0, dy: 0 };
-            return <DraggableStamp key={`topstamp-0`} index={0} dx={pos.dx} dy={pos.dy} editable={!isPrint} onChange={onStampPosChange} />;
-          })()}
-        </div>
-
         <div style={{ position: 'absolute', inset: 0, padding: DOC_PAGE_PADDING, boxSizing: 'border-box', pointerEvents: 'none' }}>
           <div style={{ position: 'relative' }}>
             <EditableDocBody
-              editable={!isPrint}
+              editable={!isPrint && textEditMode}
               customHtml={pick.customText}
+              itemOffsets={itemOffsets}
               onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
             >
-              <div style={{ fontSize: '11pt', marginTop: '36mm', marginBottom: '8mm' }}>
-                {(pick.showMain ?? true) && renderMainValuesInline(targetProp, { showHouseNum: false })}
-                {(pick.showAnnex ?? true) && (targetProp.annexes || []).map(a => (
-                  <div key={a.id}>{renderAnnexValuesPlain(a)}</div>
-                ))}
-              </div>
+              <MI id="completion-title-address">
+                <div style={{ fontSize: '11pt', marginTop: 'calc(36mm - 1.5em * 2.5 + 10px)', paddingLeft: 'calc(1em + 1px)' }}>
+                  <div>{targetProp.address || "　"}</div>
+                </div>
+              </MI>
 
-              <div style={{ fontSize: '11pt', marginBottom: '8mm' }}>
-                <p style={{ margin: '0' }}>{formatWareki(targetProp.registrationDate, targetProp.additionalUnknownDate)}　{targetProp.registrationCause || "　"}</p>
-              </div>
+              <MI id="completion-title-kindstruct">
+                <div style={{ fontSize: '11pt', marginTop: 'calc(1.5em * 3 + 20px)', paddingLeft: 'calc(1em + 1px)' }}>
+                  {(pick.showMain ?? true) && (() => {
+                    const line = buildKindStructAreaLine(getMainSymbolPrefix(targetProp), targetProp.kind, targetProp.struct, []);
+                    return <div>{line}</div>;
+                  })()}
+                  {(pick.showAnnex ?? true) && (targetProp.annexes || []).filter(a => !isAnnexEmpty(a)).map(a => {
+                    const line = buildKindStructAreaLine(formatSymbolPrefix(a.symbol), a.kind, a.struct, []);
+                    return <div key={a.id}>{line}</div>;
+                  })}
+                </div>
+              </MI>
 
-              <div style={{ fontSize: '11pt', marginBottom: '8mm' }}>
+              <MI id="completion-title-floor">
+                <div style={{ fontSize: '11pt', marginTop: 'calc(1.5em * 6 - 75px)', paddingLeft: 'calc(1em + 1px)' }}>
+                  {(pick.showMain ?? true) && (() => {
+                    const areas = floorLineInline(targetProp.floorAreas);
+                    return areas ? <div>{getMainSymbolPrefix(targetProp)}{areas}</div> : null;
+                  })()}
+                  {(pick.showAnnex ?? true) && (targetProp.annexes || []).filter(a => !isAnnexEmpty(a)).map(a => {
+                    const areas = floorLineInline(a.floorAreas);
+                    return areas ? <div key={a.id}>{formatSymbolPrefix(a.symbol)}{areas}</div> : null;
+                  })}
+                </div>
+              </MI>
+
+              <MI id="completion-title-cause">
+                <div style={{ fontSize: '11pt', marginTop: 'calc(1.5em * 10 - 113px)', paddingLeft: 'calc(1em + 1px)' }}>
+                  <p style={{ margin: '0' }}>{formatWareki(targetProp.registrationDate, targetProp.additionalUnknownDate)}　{targetProp.registrationCause || "　"}</p>
+                </div>
+              </MI>
+
+              <div style={{ fontSize: '11pt', marginTop: 'calc(1.5em * 9 - 174px)', paddingLeft: 'calc(1em + 1px)' }}>
                 {(applicants || []).map(p => (
-                  <p key={p.id} style={{ margin: '0 0 2mm 0' }}>
-                    {formatApplicantLine(p)}
-                  </p>
+                  <MI key={p.id} id={`completion-title-applicant-${p.id}`}>
+                    <p style={{ margin: '0 0 2mm 0' }}>
+                      {formatApplicantLine(p)}
+                    </p>
+                  </MI>
                 ))}
               </div>
 
-              <div style={{ textAlign: 'left', fontSize: '12pt', marginBottom: '10mm' }}>
-                <p>令和{toFullWidthDigits(currentYearReiwa)}年　　月　　日</p>
-              </div>
             </EditableDocBody>
           </div>
         </div>
@@ -401,60 +415,59 @@ export const DocTemplate = ({
 
     return (
       <div className="doc-content flex flex-col h-full text-black font-serif relative doc-no-bold" style={{ fontFamily: '"MS Mincho","ＭＳ 明朝",serif', ...printOffsetStyle }}>
-        <div className="stamp-area">
-          {(() => {
-            const pos = (pick.stampPositions || []).find(p => p.i === 0) || { dx: 0, dy: 0 };
-            return <DraggableStamp key={`topstamp-0`} index={0} dx={pos.dx} dy={pos.dy} editable={!isPrint} onChange={onStampPosChange} />;
-          })()}
-        </div>
-
         <div style={{ position: 'absolute', inset: 0, padding: DOC_PAGE_PADDING, boxSizing: 'border-box', pointerEvents: 'none' }}>
           <div style={{ position: 'relative' }}>
             <EditableDocBody
-              editable={!isPrint}
+              editable={!isPrint && textEditMode}
               customHtml={pick.customText}
+              itemOffsets={itemOffsets}
               onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
             >
-              <div style={{ fontSize: '11pt', marginTop: '36mm', marginBottom: '4mm' }}>
-                {beforeBuildings.map(b => (
-                  <div key={b.id} style={{ marginBottom: '4mm' }}>
-                    {(pick.showMain ?? true) && renderBldgForChange(b)}
-                    {(pick.showAnnex ?? true) && (b.annexes || []).map(a => (
-                      <div key={a.id}>{renderAnnexValuesPlain(a)}</div>
-                    ))}
-                  </div>
-                ))}
-                {beforeBuildings.length === 0 && <div>　</div>}
-              </div>
-              <div style={{ fontSize: '11pt', marginBottom: '8mm' }}>
-                {propsToUse.map(b => (
-                  <div key={b.id} style={{ marginBottom: '4mm' }}>
-                    {(pick.showMain ?? true) && renderBldgForChange(b)}
-                    {(pick.showAnnex ?? true) && (b.annexes || []).map(a => (
-                      <div key={a.id}>{renderAnnexValuesPlain(a)}</div>
-                    ))}
-                  </div>
-                ))}
-                {propsToUse.length === 0 && <div>　</div>}
-              </div>
+              <MI id="completion-change-before">
+                <div style={{ fontSize: '11pt', marginTop: '36mm', marginBottom: '4mm' }}>
+                  {beforeBuildings.map(b => (
+                    <div key={b.id} style={{ marginBottom: '4mm' }}>
+                      {(pick.showMain ?? true) && renderBldgForChange(b)}
+                      {(pick.showAnnex ?? true) && (b.annexes || []).map(a => (
+                        <div key={a.id}>{renderAnnexValuesPlain(a)}</div>
+                      ))}
+                    </div>
+                  ))}
+                  {beforeBuildings.length === 0 && <div>　</div>}
+                </div>
+              </MI>
+              <MI id="completion-change-after">
+                <div style={{ fontSize: '11pt', marginBottom: '8mm' }}>
+                  {propsToUse.map(b => (
+                    <div key={b.id} style={{ marginBottom: '4mm' }}>
+                      {(pick.showMain ?? true) && renderBldgForChange(b)}
+                      {(pick.showAnnex ?? true) && (b.annexes || []).map(a => (
+                        <div key={a.id}>{renderAnnexValuesPlain(a)}</div>
+                      ))}
+                    </div>
+                  ))}
+                  {propsToUse.length === 0 && <div>　</div>}
+                </div>
+              </MI>
 
-              <div style={{ fontSize: '11pt', marginBottom: '8mm' }}>
-                {filteredCauses.length > 0 ? filteredCauses.map(c => (
-                  <p key={c.id} style={{ margin: '0' }}>{c.date}{c.prefix}{c.cause}</p>
-                )) : <p style={{ margin: '0' }}>　</p>}
-              </div>
+              <MI id="completion-change-cause">
+                <div style={{ fontSize: '11pt', marginBottom: '8mm' }}>
+                  {filteredCauses.length > 0 ? filteredCauses.map(c => (
+                    <p key={c.id} style={{ margin: '0' }}>{c.date}{c.prefix}{c.cause}</p>
+                  )) : <p style={{ margin: '0' }}>　</p>}
+                </div>
+              </MI>
 
               <div style={{ fontSize: '11pt', marginBottom: '8mm' }}>
                 {(applicants || []).map(p => (
-                  <div key={p.id} style={{ margin: '0 0 2mm 0' }}>
-                    {renderOwnerWithDecedent(p, formatApplicantLine)}
-                  </div>
+                  <MI key={p.id} id={`completion-change-applicant-${p.id}`}>
+                    <div style={{ margin: '0 0 2mm 0' }}>
+                      {renderOwnerWithDecedent(p, formatApplicantLine)}
+                    </div>
+                  </MI>
                 ))}
               </div>
 
-              <div style={{ textAlign: 'left', fontSize: '12pt', marginBottom: '10mm' }}>
-                <p>令和{toFullWidthDigits(currentYearReiwa)}年　　月　　日</p>
-              </div>
             </EditableDocBody>
           </div>
         </div>
@@ -485,53 +498,44 @@ export const DocTemplate = ({
 
     return (
       <div className="doc-content flex flex-col h-full text-black font-serif relative doc-no-bold" style={{ fontFamily: '"MS Mincho","ＭＳ 明朝",serif', ...printOffsetStyle }}>
-        <div className="stamp-area">
-          {(() => {
-            const pos = (pick.stampPositions || []).find(p => p.i === 0) || { dx: 0, dy: 0 };
-            return <DraggableStamp key={`topstamp-0`} index={0} dx={pos.dx} dy={pos.dy} editable={!isPrint} onChange={onStampPosChange} />;
-          })()}
-        </div>
-
         <div style={{ position: 'absolute', inset: 0, padding: DOC_PAGE_PADDING, boxSizing: 'border-box', pointerEvents: 'none' }}>
         <EditableDocBody
-          editable={!isPrint}
+          editable={!isPrint && textEditMode}
           customHtml={pick.customText}
+              itemOffsets={itemOffsets}
           onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
         >
-          <div style={{ fontSize: '11pt', marginTop: '36mm', marginBottom: '8mm' }}>
-            {buildings.length > 0 ? buildings.map(b => (
-              <div key={b.id} style={{ marginBottom: '4mm' }}>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <div>{b.address || "　"}</div>
-                  {b.houseNum ? (
-                    <div style={{ fontWeight: 'bold' }}>家屋番号　{b.houseNum}</div>
-                  ) : null}
-                  <div>{buildKindStructAreaLine(getMainSymbolPrefix(b), b.kind, b.struct, b.floorAreas)}</div>
+          <MI id="loss-cert-building">
+            <div style={{ fontSize: '11pt', marginTop: '36mm', marginBottom: '8mm' }}>
+              {buildings.length > 0 ? buildings.map(b => (
+                <div key={b.id} style={{ marginBottom: '4mm' }}>
+                  {renderLossBuildingFields("loss-cert", b)}
+                  {(b.annexes || []).filter(a => !isAnnexEmpty(a)).map(a => (
+                    <div key={a.id} style={{ display: 'flex', flexDirection: 'column' }}>
+                      <div>{buildKindStructAreaLine(formatSymbolPrefix(a.symbol), a.kind, a.struct, a.floorAreas)}</div>
+                    </div>
+                  ))}
                 </div>
-                {(b.annexes || []).filter(a => !isAnnexEmpty(a)).map(a => (
-                  <div key={a.id} style={{ display: 'flex', flexDirection: 'column' }}>
-                    <div>{buildKindStructAreaLine(formatSymbolPrefix(a.symbol), a.kind, a.struct, a.floorAreas)}</div>
-                  </div>
-                ))}
-              </div>
-            )) : <div>　</div>}
-          </div>
+              )) : <div>　</div>}
+            </div>
+          </MI>
 
-          <div style={{ fontSize: '11pt', marginBottom: '8mm' }}>
-            <p style={{ margin: '0' }}>{causeDate}取壊し</p>
-          </div>
+          <MI id="loss-cert-cause">
+            <div style={{ fontSize: '11pt', marginBottom: '8mm' }}>
+              <p style={{ margin: '0' }}>{causeDate}取壊し</p>
+            </div>
+          </MI>
 
           <div style={{ fontSize: '11pt', marginBottom: '8mm' }}>
             {displayOwners.length > 0 ? displayOwners.map(p => (
-              <div key={p.id} style={{ margin: '0 0 2mm 0' }}>
-                {renderOwnerWithDecedent(p, (pp) => `${pp.address || "　"}　${pp.name || "　"}`)}
-              </div>
+              <MI key={p.id} id={`loss-cert-owner-${p.id}`}>
+                <div style={{ margin: '0 0 2mm 0' }}>
+                  {renderOwnerWithDecedent(p, (pp) => `${pp.address || "　"}　${pp.name || "　"}`)}
+                </div>
+              </MI>
             )) : <div>　</div>}
           </div>
 
-          <div style={{ textAlign: 'left', fontSize: '12pt', marginBottom: '10mm' }}>
-            <p>{formatTodayDateBlock()}</p>
-          </div>
         </EditableDocBody>
         </div>
       </div>
@@ -604,57 +608,46 @@ export const DocTemplate = ({
 
     return (
       <div className="doc-content flex flex-col h-full text-black font-serif relative doc-no-bold" style={{ fontFamily: '"MS Mincho","ＭＳ 明朝",serif', ...printOffsetStyle }}>
-        <div className="stamp-area">
-          {(() => {
-            const pos = (pick.stampPositions || []).find(p => p.i === 0) || { dx: 0, dy: 0 };
-            return <DraggableStamp key={`topstamp-0`} index={0} dx={pos.dx} dy={pos.dy} editable={!isPrint} onChange={onStampPosChange} />;
-          })()}
-        </div>
-
         <div style={{ position: 'absolute', inset: 0, padding: DOC_PAGE_PADDING, boxSizing: 'border-box', pointerEvents: 'none' }}>
         <EditableDocBody
-          editable={!isPrint}
+          editable={!isPrint && textEditMode}
           customHtml={pick.customText}
+              itemOffsets={itemOffsets}
           onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
         >
-          <div style={{ fontSize: '11pt', marginTop: '36mm', marginBottom: '8mm' }}>
-            {buildings.length > 0 ? buildings.map(b => (
-              <div key={b.id} style={{ marginBottom: '4mm' }}>
-                {showMain && (
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <div>{b.address || "　"}</div>
-                    {b.houseNum ? (
-                      <div style={{ fontWeight: 'bold' }}>家屋番号　{b.houseNum}</div>
-                    ) : null}
-                    <div>{buildKindStructAreaLine(getMainSymbolPrefix(b), b.kind, b.struct, b.floorAreas)}</div>
-                  </div>
-                )}
-                {(b.annexes || []).filter(a => !isAnnexEmpty(a) && !hiddenAnnexIds.has(a.id)).map(a => (
-                  <div key={a.id} style={{ display: 'flex', flexDirection: 'column' }}>
-                    <div>{buildKindStructAreaLine(formatSymbolPrefix(a.symbol), a.kind, a.struct, a.floorAreas)}</div>
-                  </div>
-                ))}
-              </div>
-            )) : <div>　</div>}
-          </div>
+          <MI id="loss-change-building">
+            <div style={{ fontSize: '11pt', marginTop: '36mm', marginBottom: '8mm' }}>
+              {buildings.length > 0 ? buildings.map(b => (
+                <div key={b.id} style={{ marginBottom: '4mm' }}>
+                  {showMain && renderLossBuildingFields("loss-change", b)}
+                  {(b.annexes || []).filter(a => !isAnnexEmpty(a) && !hiddenAnnexIds.has(a.id)).map(a => (
+                    <div key={a.id} style={{ display: 'flex', flexDirection: 'column' }}>
+                      <div>{buildKindStructAreaLine(formatSymbolPrefix(a.symbol), a.kind, a.struct, a.floorAreas)}</div>
+                    </div>
+                  ))}
+                </div>
+              )) : <div>　</div>}
+            </div>
+          </MI>
 
-          <div style={{ fontSize: '11pt', marginBottom: '8mm' }}>
-            {lossCauseEntries.length > 0 ? lossCauseEntries.map((c, i) => (
-              <p key={i} style={{ margin: '0' }}>{c.date}{c.prefix}{c.cause}</p>
-            )) : <p style={{ margin: '0' }}>{fallbackDate}取壊し</p>}
-          </div>
+          <MI id="loss-change-cause">
+            <div style={{ fontSize: '11pt', marginBottom: '8mm' }}>
+              {lossCauseEntries.length > 0 ? lossCauseEntries.map((c, i) => (
+                <p key={i} style={{ margin: '0' }}>{c.date}{c.prefix}{c.cause}</p>
+              )) : <p style={{ margin: '0' }}>{fallbackDate}取壊し</p>}
+            </div>
+          </MI>
 
           <div style={{ fontSize: '11pt', marginBottom: '8mm' }}>
             {displayOwners.length > 0 ? displayOwners.map(p => (
-              <div key={p.id} style={{ margin: '0 0 2mm 0' }}>
-                {renderOwnerWithDecedent(p, (pp) => `${pp.address || "　"}　${pp.name || "　"}`)}
-              </div>
+              <MI key={p.id} id={`loss-change-owner-${p.id}`}>
+                <div style={{ margin: '0 0 2mm 0' }}>
+                  {renderOwnerWithDecedent(p, (pp) => `${pp.address || "　"}　${pp.name || "　"}`)}
+                </div>
+              </MI>
             )) : <div>　</div>}
           </div>
 
-          <div style={{ textAlign: 'left', fontSize: '12pt', marginBottom: '10mm' }}>
-            <p>{formatTodayDateBlock()}</p>
-          </div>
         </EditableDocBody>
         </div>
       </div>
@@ -697,49 +690,59 @@ export const DocTemplate = ({
       <div className="doc-content flex flex-col h-full text-black font-serif relative doc-no-bold" style={{ fontFamily: '"MS Mincho","ＭＳ 明朝",serif', ...printOffsetStyle }}>
         <div style={{ position: 'absolute', inset: 0, padding: DOC_PAGE_PADDING, boxSizing: 'border-box', pointerEvents: 'none' }}>
         <EditableDocBody
-          editable={!isPrint}
+          editable={!isPrint && textEditMode}
           customHtml={pick.customText}
+              itemOffsets={itemOffsets}
           onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', fontSize: '12pt', marginBottom: '2mm' }}>
-            <div>{getMayorTitle()}　殿</div>
-            <div>{formatTodayDateBlock()}</div>
-          </div>
-
-          <p style={{ fontSize: '11pt', marginBottom: '8mm' }}>
-            下記物件は令和{currentYear}年度の固定資産課税台帳に登載されていないことを証明願います。
-          </p>
-
-          <div style={{ fontSize: '11pt', marginBottom: '6mm' }}>
-            <div style={{ display: 'flex', gap: '4mm' }}>
-              <span>管轄法務局へ建物滅失登記申請のため</span>
+          <MI id="ntr-header">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', fontSize: '12pt', marginBottom: '2mm' }}>
+              <div>{getMayorTitle()}　殿</div>
             </div>
-          </div>
+          </MI>
 
-          <div style={{ fontSize: '11pt', marginBottom: '8mm', minHeight: '30mm', paddingLeft: '4mm' }}>
-            {ntrBuildings.length > 0 ? ntrBuildings.map(b => (
-              <div key={b.id} style={{ marginBottom: '4mm' }}>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <div>{b.address || "　"}</div>
-                  {b.houseNum ? (
-                    <div style={{ fontWeight: 'bold' }}>家屋番号　{b.houseNum}</div>
-                  ) : null}
-                  <div>{buildKindStructAreaLine(getMainSymbolPrefix(b), b.kind, b.struct, b.floorAreas)}</div>
-                </div>
-                {(b.annexes || []).filter(a => !isAnnexEmpty(a)).map(a => (
-                  <div key={a.id} style={{ display: 'flex', flexDirection: 'column' }}>
-                    <div>{buildKindStructAreaLine(formatSymbolPrefix(a.symbol), a.kind, a.struct, a.floorAreas)}</div>
-                  </div>
-                ))}
+          <MI id="ntr-body">
+            <p style={{ fontSize: '11pt', marginBottom: '8mm' }}>
+              下記物件は令和{currentYear}年度の固定資産課税台帳に登載されていないことを証明願います。
+            </p>
+          </MI>
+
+          <MI id="ntr-purpose">
+            <div style={{ fontSize: '11pt', marginBottom: '6mm' }}>
+              <div style={{ display: 'flex', gap: '4mm' }}>
+                <span>管轄法務局へ建物滅失登記申請のため</span>
               </div>
-            )) : <div>　</div>}
-          </div>
+            </div>
+          </MI>
+
+          <MI id="ntr-building">
+            <div style={{ fontSize: '11pt', marginBottom: '8mm', minHeight: '30mm', paddingLeft: '4mm' }}>
+              {ntrBuildings.length > 0 ? ntrBuildings.map(b => (
+                <div key={b.id} style={{ marginBottom: '4mm' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <div>{b.address || "　"}</div>
+                    {b.houseNum ? (
+                      <div style={{ fontWeight: 'bold' }}>家屋番号　{b.houseNum}</div>
+                    ) : null}
+                    <div>{buildKindStructAreaLine(getMainSymbolPrefix(b), b.kind, b.struct, b.floorAreas)}</div>
+                  </div>
+                  {(b.annexes || []).filter(a => !isAnnexEmpty(a)).map(a => (
+                    <div key={a.id} style={{ display: 'flex', flexDirection: 'column' }}>
+                      <div>{buildKindStructAreaLine(formatSymbolPrefix(a.symbol), a.kind, a.struct, a.floorAreas)}</div>
+                    </div>
+                  ))}
+                </div>
+              )) : <div>　</div>}
+            </div>
+          </MI>
 
           <div style={{ fontSize: '11pt', marginBottom: '8mm', paddingLeft: '4mm' }}>
             {ntrDisplayOwners.length > 0 ? ntrDisplayOwners.map(p => (
-              <div key={p.id} style={{ margin: '0 0 2mm 0' }}>
-                {renderOwnerWithDecedent(p, (pp) => `${pp.address || "　"}　${pp.name || "　"}`)}
-              </div>
+              <MI key={p.id} id={`ntr-owner-${p.id}`}>
+                <div style={{ margin: '0 0 2mm 0' }}>
+                  {renderOwnerWithDecedent(p, (pp) => `${pp.address || "　"}　${pp.name || "　"}`)}
+                </div>
+              </MI>
             )) : <div>　</div>}
           </div>
         </EditableDocBody>
@@ -762,6 +765,7 @@ export const DocTemplate = ({
     dateBlock,
     topRightBlock,
     signerList,
+    signerMarginTop = '0px',
   }) => {
     const signers = signerList || applicants || [];
     return (
@@ -769,56 +773,40 @@ export const DocTemplate = ({
         className="doc-content flex flex-col h-full text-black font-serif relative doc-no-bold"
         style={{ fontFamily: '"MS Mincho","ＭＳ 明朝",serif', ...printOffsetStyle }}
       >
-        <div className="stamp-area">
-          {signers.map((_, i) => {
-            const pos = (pick.stampPositions || []).find(p => p.i === i) || { dx: 0, dy: 0 };
-            return <DraggableStamp key={`topstamp-${i}`} index={i} dx={pos.dx} dy={pos.dy} editable={!isPrint} onChange={onStampPosChange} />;
-          })}
-        </div>
-
         <div style={{ position: 'absolute', inset: 0, padding: DOC_PAGE_PADDING, boxSizing: 'border-box', pointerEvents: 'none' }}>
           <div style={{ position: 'relative' }}>
             <EditableDocBody
-              editable={!isPrint}
+              editable={!isPrint && textEditMode}
               customHtml={pick.customText}
+              itemOffsets={itemOffsets}
               onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
             >
-              <div style={{ fontSize: '11pt', marginTop: '36mm', marginBottom: '10mm', fontWeight: 'bold' }}>
-                {workText}
-              </div>
-
-              <div style={{ marginTop: '-5mm' }}>
-                {buildingSubTitle && <div style={{ fontSize: '11pt', margin: '2mm 0 0 0', fontWeight: 'bold' }}>{buildingSubTitle}</div>}
-                <div style={{ fontSize: '11pt', marginBottom: '10mm' }}>
-                  {buildingBlock}
+              <MI id="delegation-work">
+                <div style={{ fontSize: '11pt', marginTop: '86mm', marginBottom: '3mm', fontWeight: 'bold', paddingLeft: '1em' }}>
+                  {workText}
                 </div>
-              </div>
+              </MI>
 
-              <div style={{ fontSize: '11pt', marginBottom: '8mm' }}>
-                {dateBlock ?? formatTodayDateBlock()}
-              </div>
+              <MI id="delegation-building">
+                <div style={{ marginTop: '12mm', paddingLeft: '1em' }}>
+                  {buildingSubTitle && <div style={{ fontSize: '11pt', margin: '2mm 0 0 0', fontWeight: 'bold' }}>{buildingSubTitle}</div>}
+                  <div style={{ fontSize: '11pt', marginBottom: '5mm' }}>
+                    {buildingBlock}
+                  </div>
+                </div>
+              </MI>
 
-              <div style={{ fontSize: '11pt' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2mm', paddingRight: 'calc(1em + 26.6mm)' }}>
+
+              <div style={{ fontSize: '11pt', paddingLeft: '1em', marginTop: signerMarginTop }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0mm', paddingRight: 'calc(1em + 27.5mm)' }}>
                   {signers.map((p, i) => (
-                    <div key={p.id || i} style={{ display: 'flex', alignItems: 'center', minHeight: '26.6mm' }}>{formatApplicantShareOnly(p)}</div>
+                    <MI key={p.id || i} id={`delegation-signer-${p.id || i}`}>
+                      <div style={{ display: 'flex', alignItems: 'center', minHeight: '27.5mm' }}>{formatApplicantShareOnly(p)}</div>
+                    </MI>
                   ))}
                 </div>
               </div>
             </EditableDocBody>
-            <div style={{ position: 'absolute', bottom: 0, right: 0, display: 'flex', flexDirection: 'column', gap: '2mm', pointerEvents: 'auto' }}>
-              {signers.map((p, i) => {
-                const pos = getSignerPos(i);
-                return (
-                  <div key={p.id || i} style={{ position: 'relative', width: '26.6mm', height: '26.6mm' }}>
-                    <DraggableSignerStamp
-                      index={i} dx={pos.dx} dy={pos.dy}
-                      editable={!isPrint} onChange={onSignerStampPosChange}
-                    />
-                  </div>
-                );
-              })}
-            </div>
           </div>
         </div>
       </div>
@@ -850,7 +838,7 @@ export const DocTemplate = ({
       </p>
     );
 
-    return renderDelegationCommon({ docNoBold: true, workText, buildingBlock, dateBlock });
+    return renderDelegationCommon({ docNoBold: true, workText, buildingBlock, dateBlock, signerMarginTop: '175px' });
   };
 
   const buildCommonBuildingBlock = () => {
@@ -870,23 +858,6 @@ export const DocTemplate = ({
     </>
   );
 
-  const DelegationSaveTemplate = () => {
-    const b = (typeof targetProp !== "undefined" && targetProp) ? targetProp : (sortedProp?.[0] || null);
-    const workText = "登記の目的　所有権保存登記";
-
-    const buildingBlock = b ? (
-      <div style={{ marginBottom: '6mm' }}>
-        {(pick.showMain ?? true) && renderMainValues(b, { showHouseNum: true })}
-        {(pick.showAnnex ?? true) && (b.annexes || []).map(a => (
-          <div key={a.id}>{renderAnnexValues(a)}</div>
-        ))}
-      </div>
-    ) : (
-      <div>　</div>
-    );
-
-    return renderDelegationCommon({ docNoBold: false, workText, buildingBlock });
-  };
 
   const DelegationLandCategoryChangeTemplate = () => {
     const changedLands = (selectedLand || []).filter(l => l.categoryChangeEnabled);
@@ -1136,45 +1107,6 @@ export const DocTemplate = ({
     });
   };
 
-  const DelegationAddressChangeTemplate = () => {
-    const workText = (
-      <>
-        <div style={{ whiteSpace: 'pre-wrap' }}>
-             登 記 の 目 的　　　所有権登記名義人住所変更
-        </div>
-        <div>原　　　　　因</div>
-        <div>変更すべき事項</div>
-        <div>　</div>
-        <div>　</div>
-      </>
-    );
-
-    const landBlock = (selectedLand || []).length ? (
-      <div style={{ marginBottom: '6mm' }}>
-        {(selectedLand || []).map((l, idx) => (
-          <div key={l.id || idx} style={{ whiteSpace: 'pre-wrap' }}>
-            <div>
-              {(l.address || "　")}
-              {""}
-              {(l.lotNumber || "　")}
-              {"　"}
-              {(l.category || "　")}
-              {"　"}
-              {`${l.area || "　"}㎡`}
-            </div>
-          </div>
-        ))}
-      </div>
-    ) : (
-      <div>　</div>
-    );
-
-    return renderDelegationCommon({
-      docNoBold: false, workText,
-      buildingTitle: "物件の表示", buildingBlock: landBlock,
-      dateBlock: buildCommonDateBlock(),
-    });
-  };
 
     const DelegationTitleCorrectionTemplate = () => {
       const sortedBuildings = naturalSortList(siteData.buildings || [], 'houseNum');
@@ -1460,11 +1392,9 @@ export const DocTemplate = ({
 
   const DELEGATION_TEMPLATES = {
     "委任状（表題）": DelegationTitleTemplate,
-    "委任状（保存）": DelegationSaveTemplate,
     "委任状（地目変更）": DelegationLandCategoryChangeTemplate,
     "委任状（滅失）": DelegationLossTemplate,
     "委任状（表題部変更）": DelegationTitleChangeTemplate,
-    "委任状（住所変更）": DelegationAddressChangeTemplate,
     "委任状（表題部更正）": DelegationTitleCorrectionTemplate,
     "委任状（合併）": DelegationMergeTemplate,
     "委任状（分割）": DelegationSplitTemplate,
@@ -1479,7 +1409,7 @@ export const DocTemplate = ({
   // 申述書系（共有 / 単独）
   // ==========================
 
-  const renderStatementCommon = ({ titleText, defaultBody }) => {
+  const renderStatementCommon = ({ titleText, defaultBody, buildingMarginTop = '36mm' }) => {
     const hasMultipleStatementPeople = (statementPeople || []).length >= 2;
     // 石友版: 持分のみ表示（住所・氏名は非表示）、showStatementShareトグルで制御
     const showShare = pick?.showStatementShare ?? true;
@@ -1488,6 +1418,20 @@ export const DocTemplate = ({
       if (hasMultipleStatementPeople) return formatShare(p?.share);
       return "";
     };
+
+    // 確認済証情報のデフォルト初期位置（右190px、下40px）
+    const statementDefaultOffsets = { 'statement-confirm': { x: 190, y: 40 } };
+    const mergedOffsets = {};
+    Object.entries(itemOffsets).forEach(([k, v]) => { mergedOffsets[k] = { ...v }; });
+    Object.entries(statementDefaultOffsets).forEach(([k, def]) => {
+      const user = mergedOffsets[k] || { x: 0, y: 0 };
+      mergedOffsets[k] = { x: def.x + user.x, y: def.y + user.y };
+    });
+    const SMI = ({ id, children, style }) => (
+      <MovableItem itemId={id} offsets={mergedOffsets} selected={selectedItems} onSelect={onItemSelect} isPrint={isPrint} style={style}>
+        {children}
+      </MovableItem>
+    );
 
     const buildingBlock = targetProp ? (
       <div style={{ marginBottom: "6mm" }}>
@@ -1504,61 +1448,45 @@ export const DocTemplate = ({
         className="doc-content flex flex-col h-full text-black font-serif relative doc-no-bold"
         style={{ fontFamily: '"MS Mincho","ＭＳ 明朝",serif', ...printOffsetStyle }}
       >
-        <div className="stamp-area">
-          {(statementPeople || []).map((_, i) => {
-            const pos = (pick.stampPositions || []).find(p => p.i === i) || { dx: 0, dy: 0 };
-            return <DraggableStamp key={`topstamp-${i}`} index={i} dx={pos.dx} dy={pos.dy} editable={!isPrint} onChange={onStampPosChange} />;
-          })}
-        </div>
-
         <div style={{ position: 'absolute', inset: 0, padding: DOC_PAGE_PADDING, boxSizing: 'border-box', pointerEvents: 'none' }}>
           <div style={{ position: 'relative' }}>
             <EditableDocBody
-              editable={!isPrint}
+              editable={!isPrint && textEditMode}
               customHtml={pick.customText}
+              itemOffsets={itemOffsets}
               onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
             >
-              <div style={{ fontSize: "11pt", marginTop: '36mm', marginBottom: "8mm" }}>{buildingBlock}</div>
+              <SMI id="statement-building">
+                <div style={{ fontSize: "11pt", marginTop: buildingMarginTop, marginBottom: "8mm" }}>{buildingBlock}</div>
+              </SMI>
 
-              <div style={{ fontSize: "11pt", marginBottom: "8mm" }}>
-                <div>{targetProp?.confirmationCert ? formatConfirmationCertLine(targetProp.confirmationCert) : "　"}</div>
-                {(() => {
-                  const confirmIds = Array.isArray(pick?.confirmApplicantPersonIds) ? pick.confirmApplicantPersonIds : [];
-                  const people = siteData.people || [];
-                  const selected = confirmIds.length > 0
-                    ? people.filter(p => confirmIds.includes(p.id))
-                    : people.filter(p => (p.roles || []).includes("建築申請人"));
-                  return selected.length > 0
-                    ? selected.map(p => <div key={p.id}>{p.name || "　"}</div>)
-                    : <div>{"　"}</div>;
-                })()}
-              </div>
+              <SMI id="statement-confirm">
+                <div style={{ fontSize: "11pt", marginBottom: "8mm" }}>
+                  <div>{targetProp?.confirmationCert ? formatConfirmationCertLine(targetProp.confirmationCert) : "　"}</div>
+                  {(() => {
+                    const confirmIds = Array.isArray(pick?.confirmApplicantPersonIds) ? pick.confirmApplicantPersonIds : [];
+                    const people = siteData.people || [];
+                    const selected = confirmIds.length > 0
+                      ? people.filter(p => confirmIds.includes(p.id))
+                      : people.filter(p => (p.roles || []).includes("建築申請人"));
+                    return selected.length > 0
+                      ? selected.map(p => <div key={p.id}>{p.name || "　"}</div>)
+                      : <div>{"　"}</div>;
+                  })()}
+                </div>
+              </SMI>
 
-              <div style={{ textAlign: "left", fontSize: "11pt", margin: "0 0 6mm 0" }}>
-                {formatTodayDateBlock()}
-              </div>
 
               <div style={{ fontSize: "11pt" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "2mm", paddingRight: "calc(1em + 26.6mm)" }}>
                   {(statementPeople || []).map((p, i) => (
-                    <div key={p.id || i} style={{ display: "flex", alignItems: "center", minHeight: "26.6mm" }}>{formatStatementShareOnly(p)}</div>
+                    <SMI key={p.id || i} id={`statement-signer-${p.id || i}`}>
+                      <div style={{ display: "flex", alignItems: "center", minHeight: "26.6mm" }}>{formatStatementShareOnly(p)}</div>
+                    </SMI>
                   ))}
                 </div>
               </div>
             </EditableDocBody>
-            <div style={{ position: 'absolute', bottom: 0, right: 0, display: 'flex', flexDirection: 'column', gap: '2mm', pointerEvents: 'auto' }}>
-              {(statementPeople || []).map((p, i) => {
-                const pos = getSignerPos(i);
-                return (
-                  <div key={p.id || i} style={{ position: 'relative', width: '26.6mm', height: '26.6mm' }}>
-                    <DraggableSignerStamp
-                      index={i} dx={pos.dx} dy={pos.dy}
-                      editable={!isPrint} onChange={onSignerStampPosChange}
-                    />
-                  </div>
-                );
-              })}
-            </div>
           </div>
       </div>
       </div>
@@ -1585,79 +1513,50 @@ export const DocTemplate = ({
       : allApplicants;
     const displayBuyers = saleBuyers.length > 0 ? saleBuyers : allApplicants;
 
-    const sellerCandidates = (siteData?.people || []).filter(p => (p.roles || []).includes("その他"));
-    const sellerIds = Array.isArray(pick?.saleSellerPersonIds) ? pick.saleSellerPersonIds : [];
-    const displaySellers = sellerIds.length > 0
-      ? sellerCandidates.filter(p => new Set(sellerIds).has(p.id))
-      : sellerCandidates;
-
-    const currentYearReiwa = String(new Date().getFullYear() - 2018);
-    const w = getWarekiNow();
-
-    const buyerText = displayBuyers.map(p => `${p.address || "　"}　${p.name || "　"}様`).join("、");
-
     return (
       <div className="doc-content flex flex-col h-full text-black font-serif relative doc-no-bold" style={{ fontFamily: '"MS Mincho","ＭＳ 明朝",serif', ...printOffsetStyle }}>
-        <div className="stamp-area">
-          {(() => {
-            const pos = (pick.stampPositions || []).find(p => p.i === 0) || { dx: 0, dy: 0 };
-            return <DraggableStamp key={`topstamp-0`} index={0} dx={pos.dx} dy={pos.dy} editable={!isPrint} onChange={onStampPosChange} />;
-          })()}
-        </div>
-
         <div style={{ position: 'absolute', inset: 0, padding: DOC_PAGE_PADDING, boxSizing: 'border-box', pointerEvents: 'none' }}>
           <div style={{ position: 'relative' }}>
             <EditableDocBody
-              editable={!isPrint}
+              editable={!isPrint && textEditMode}
               customHtml={pick.customText}
+              itemOffsets={itemOffsets}
               onCustomHtmlChange={(html) => onPickChange?.({ customText: html })}
             >
-              <div style={{ fontSize: '11pt', marginTop: '36mm', marginBottom: '4mm' }}>
-                {saleBuilding ? (
-                  <>
-                    {(pick.showMain ?? true) && renderMainValuesInline(saleBuilding, { showHouseNum: false })}
-                    {(pick.showAnnex ?? true) && (saleBuilding.annexes || []).map(a => (
-                      <div key={a.id}>{renderAnnexValuesPlain(a)}</div>
-                    ))}
-                  </>
-                ) : <div>　</div>}
-              </div>
+              <MI id="sale-building">
+                <div style={{ fontSize: '11pt', marginTop: 'calc(39mm + 1.5em)', marginBottom: '4mm' }}>
+                  {saleBuilding ? (
+                    <>
+                      {(pick.showMain ?? true) && renderMainValuesInline(saleBuilding, { showHouseNum: false })}
+                      {(pick.showAnnex ?? true) && (saleBuilding.annexes || []).map(a => (
+                        <div key={a.id}>{renderAnnexValuesPlain(a)}</div>
+                      ))}
+                    </>
+                  ) : <div>　</div>}
+                </div>
+              </MI>
 
-              <div style={{ textAlign: 'left', fontSize: '12pt', marginBottom: '6mm' }}>
-                <p>{toFullWidthDigits(`${w.era}${currentYearReiwa}年　　月　　日`)}</p>
-              </div>
 
               <div style={{ fontSize: '11pt', marginTop: '6mm' }}>
-                {displaySellers.length > 0 ? displaySellers.map((p, i) => (
-                  <div key={p.id} style={{ display: 'flex', alignItems: 'center', minHeight: '26.6mm', marginTop: i > 0 ? '4mm' : '0' }}>
-                    <div style={{ fontSize: '12pt', paddingRight: 'calc(1em + 26.6mm)' }}>
-                      <p style={{ margin: '0 0 2mm 0' }}>{p.address || "　"}</p>
-                      <p style={{ margin: '0' }}>{p.name || "　"}</p>
+                {displayBuyers.length > 0 ? displayBuyers.map((p, i) => (
+                  <MI key={p.id} id={`sale-buyer-${p.id}`}>
+                    <div style={{ display: 'flex', alignItems: 'center', minHeight: '26.6mm', marginTop: i > 0 ? '4mm' : '0' }}>
+                      <div style={{ fontSize: '11pt', paddingRight: 'calc(1em + 26.6mm)' }}>
+                        <p style={{ margin: '0' }}>{p.address || "　"}</p>
+                        <p style={{ margin: '0' }}>{displayBuyers.length > 1 ? `${formatShare(p?.share)}　${p.name || "　"}` : (p.name || "　")}</p>
+                      </div>
                     </div>
-                  </div>
+                  </MI>
                 )) : (
                   <div style={{ display: 'flex', alignItems: 'center', minHeight: '26.6mm' }}>
-                    <div style={{ fontSize: '12pt', paddingRight: 'calc(1em + 26.6mm)' }}>
-                      <p style={{ margin: '0 0 2mm 0' }}>　</p>
+                    <div style={{ fontSize: '11pt', paddingRight: 'calc(1em + 26.6mm)' }}>
+                      <p style={{ margin: '0' }}>　</p>
                       <p style={{ margin: '0' }}>　</p>
                     </div>
                   </div>
                 )}
               </div>
             </EditableDocBody>
-            <div style={{ position: 'absolute', bottom: 0, right: 0, display: 'flex', flexDirection: 'column', gap: '2mm', pointerEvents: 'auto' }}>
-              {(displaySellers.length > 0 ? displaySellers : [null]).map((p, i) => {
-                const pos = getSignerPos(i);
-                return (
-                  <div key={p?.id || i} style={{ position: 'relative', width: '26.6mm', height: '26.6mm' }}>
-                    <DraggableSignerStamp
-                      index={i} dx={pos.dx} dy={pos.dy}
-                      editable={!isPrint} onChange={onSignerStampPosChange}
-                    />
-                  </div>
-                );
-              })}
-            </div>
           </div>
         </div>
       </div>
@@ -1668,6 +1567,7 @@ export const DocTemplate = ({
     return renderStatementCommon({
       titleText: "申述書",
       defaultBody: "上記の建物は下記の通りの持分であることを証明します。",
+      buildingMarginTop: '48mm',
     });
   }
 
@@ -1681,6 +1581,7 @@ export const DocTemplate = ({
     return renderStatementCommon({
       titleText: "申述書",
       defaultBody: body,
+      buildingMarginTop: '41mm',
     });
   }
 

@@ -159,8 +159,9 @@ export const createNewSite = (name) => ({
   name: name || '新規現場',
   address: '', land: [], buildings: [], proposedBuildings: [], people: [],
   applications: APPLICATION_TYPES.reduce((acc, type) => ({ ...acc, [type]: 0 }), {}),
+  registrationApplications: [],
   documents: {}, docPick: {},
-  contractorId: "", scrivenerId: ""
+  contractorId: ""
 });
 
 export const createDefaultCauseDate = () => ({ era: "令和", year: "", month: "", day: "", unknown: false });
@@ -170,6 +171,7 @@ export const createNewBuilding = () => ({
   address: '', symbol: '', houseNum: '', kind: '',
   structMaterial: '', structFloor: '', struct: '',
   owner: '',
+  siteLandIds: [],
   floorAreas: [{ id: generateId(), floor: '１階', area: '' }],
   hasBasement: false,
   annexes: [],
@@ -344,7 +346,6 @@ export const formatShare = (share) => {
 };
 
 export const getSelectedContractor = (siteData, contractors) => (contractors || []).find(c => c.id === siteData.contractorId) || null;
-export const getSelectedScrivener = (siteData, scriveners) => (scriveners || []).find(s => s.id === siteData.scrivenerId) || null;
 
 export const formatWareki = (d, additionalUnknownDate = false) => {
   if (!d) return "　";

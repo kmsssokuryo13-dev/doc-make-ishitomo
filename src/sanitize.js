@@ -4,6 +4,15 @@ import {
   parseStructureToFloors, parseAnnexStructureToFloors, parseStructParts,
   sanitizeConfirmationCert
 } from './utils.js';
+import {
+  normalizeRegistrationApplication, migrateLegacyLandTargets
+} from './registrationApplications.js';
+
+// 通常版と共有する連携用フィールド（共通Core）。石友版のUIでは未使用でも、
+// 読み込み→保存→再エクスポートで失わないよう明示的に保持する。
+// 未知フィールドを何でも通す generic pass-through は行わない。
+const stringList = (value) =>
+  Array.isArray(value) ? value.filter(v => typeof v === "string") : [];
 
 export const sanitizeSiteData = (raw = {}) => {
   const sanitizeLand = (l = {}) => ({
@@ -13,6 +22,7 @@ export const sanitizeSiteData = (raw = {}) => {
     category: l.category || "",
     area: l.area || "",
     owner: l.owner || "",
+    ownerPersonIds: stringList(l.ownerPersonIds),
     categoryChangeEnabled: !!l.categoryChangeEnabled,
     newCategory: l.newCategory ?? "",
     newArea: l.newArea ?? "",
@@ -119,6 +129,9 @@ export const sanitizeSiteData = (raw = {}) => {
       structFloor,
       struct,
       owner: b.owner || "",
+      ownerPersonIds: stringList(b.ownerPersonIds),
+      // 建物の敷地となる土地（land[].id）。石友版では現在生成しないが保持する。
+      siteLandIds: stringList(b.siteLandIds),
       floorAreas,
       hasBasement,
       annexes: Array.isArray(b.annexes) ? b.annexes.map(sanitizeAnnex) : [],
@@ -131,7 +144,9 @@ export const sanitizeSiteData = (raw = {}) => {
       },
       additionalCauses: Array.isArray(b.additionalCauses) ? b.additionalCauses.map(sanitizeCauseEntry) : [],
       additionalUnknownDate: !!b.additionalUnknownDate,
-      confirmationCert: sanitizeConfirmationCert(b.confirmationCert)
+      confirmationCert: sanitizeConfirmationCert(b.confirmationCert),
+      confirmApplicantPersonIds: stringList(b.confirmApplicantPersonIds),
+      confirmApplicantNames: stringList(b.confirmApplicantNames)
     };
   };
 
@@ -140,11 +155,14 @@ export const sanitizeSiteData = (raw = {}) => {
     return acc;
   }, {});
 
+  const land = Array.isArray(raw.land) ? raw.land.map(sanitizeLand) : [];
+  const landIds = new Set(land.map(l => l.id));
+
   return {
     id: raw.id || generateId(),
     name: raw.name || "新規現場",
     address: raw.address || "",
-    land: Array.isArray(raw.land) ? raw.land.map(sanitizeLand) : [],
+    land,
     buildings: Array.isArray(raw.buildings) ? raw.buildings.map(sanitizeBuilding) : [],
     proposedBuildings: Array.isArray(raw.proposedBuildings) ? raw.proposedBuildings.map(sanitizeBuilding) : [],
     people: Array.isArray(raw.people)
@@ -157,11 +175,29 @@ export const sanitizeSiteData = (raw = {}) => {
         }))
       : [],
     applications: stableSortKeys({ ...baseApplications, ...(raw.applications || {}) }),
+    registrationApplications: Array.isArray(raw.registrationApplications)
+      ? migrateLegacyLandTargets(
+          raw.registrationApplications.map(normalizeRegistrationApplication),
+          landIds
+        )
+      : [],
     documents: stableSortKeys(typeof raw.documents === "object" && raw.documents ? raw.documents : {}),
     docPick: stableSortKeys(typeof raw.docPick === "object" && raw.docPick ? raw.docPick : {}),
     contractorId: raw.contractorId || "",
     scrivenerId: raw.scrivenerId || ""
   };
+};
+
+// JSON ルート直下の共通Core情報。石友版のUIでは使わないが、読み込んだ値を
+// 再エクスポート時にそのまま書き戻すために保持する。存在しないキーは持たない。
+export const sanitizeCoreExtras = (raw = {}) => {
+  const extras = {};
+  if (Array.isArray(raw.scriveners)) extras.scriveners = raw.scriveners;
+  // variant は出力元アプリ自身が決めるため extras では持たない。
+  if (typeof raw.variantVersion === "string" || typeof raw.variantVersion === "number") {
+    extras.variantVersion = raw.variantVersion;
+  }
+  return extras;
 };
 
 export const sanitizeContractors = (list) => {
@@ -171,14 +207,5 @@ export const sanitizeContractors = (list) => {
     address: c.address || "",
     tradeName: c.tradeName || c.name || "",
     representative: c.representative || ""
-  }));
-};
-
-export const sanitizeScriveners = (list) => {
-  if (!Array.isArray(list)) return [];
-  return list.map(s => ({
-    id: s.id || generateId(),
-    address: s.address || "",
-    name: s.name || ""
   }));
 };
